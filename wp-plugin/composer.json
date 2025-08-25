@@ -1,0 +1,19 @@
+{
+    "name": "ri2/wp-live-chat-users",
+    "description": "Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server.",
+    "type": "project",
+    "require": {
+        "kucrut/vite-for-wp": "^0.12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "WPLCAPP\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rathod Ritesh",
+            "email": "rathodriteshrock@gmail.com"
+        }
+    ]
+}
