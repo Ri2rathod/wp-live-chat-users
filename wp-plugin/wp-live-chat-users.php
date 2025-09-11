@@ -1,6 +1,7 @@
 <?php
 
 use WPLCAPP\baseClasses\WPLCApp;
+
 /**
  * Plugin Name: WP Live Chat Users
  * Plugin URI:  https://github.com/Ri2rathod/wp-live-chat-users
@@ -28,4 +29,10 @@ define( 'WP_LIVE_CHAT_USERS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_LIVE_CHAT_USERS_URL', plugin_dir_url( __FILE__ ) );
 define('WP_LIVE_CHAT_USERS_BASE_NAME', plugin_basename(__FILE__));
 
-(new WPLCApp())->init();
+$wplc_app = new WPLCApp();
+
+// Register activation hook
+register_activation_hook(__FILE__, [$wplc_app, 'activate']);
+
+// Initialize the plugin
+$wplc_app->init();

@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { chatService } from './ChatService';
 
 // Type definitions
 interface ChatItem {
@@ -23,10 +24,12 @@ interface ChatItem {
 }
 
 interface Message {
-  id: number;
+  id: number | string;
   text: string;
   sender: 'user' | 'bot' | 'other';
   timestamp: Date;
+  status?: 'pending' | 'sent' | 'delivered' | 'read';
+  isOptimistic?: boolean;
 }
 
 interface MessagesState {
@@ -42,9 +45,14 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for chat list
+  // Current user ID (get from WordPress API settings)
+  const currentUserId = (window as any).wpApiSettings?.currentUser?.id || 1;
+
+  // Mock data for chat list (will be replaced with real data from API)
   const [chatList] = useState<ChatItem[]>([
     {
       id: 1,
@@ -84,7 +92,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     }
   ]);
 
-  // Mock messages for each chat
+  // Mock messages for each chat (will be replaced with real data from API)
   const [messages, setMessages] = useState<MessagesState>({
     1: [
       { id: 1, text: "Hello! How can I help you today?", sender: "bot", timestamp: new Date() },
@@ -103,48 +111,220 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     ]
   });
 
-  const scrollToBottom = (): void => {
+  // Initialize chat service
+  useEffect(() => {
+    let isInitialized = false;
+
+    const initializeChat = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+
+      // Check if WordPress settings are available
+      if (!currentUserId || currentUserId === 1) {
+        console.warn('WordPress user not found, using fallback mode');
+        setIsConnected(false);
+        return;
+      }
+
+      try {
+        await chatService.initialize(currentUserId, {
+          onConnectionStatusChanged: (connected) => {
+            setIsConnected(connected);
+            console.log('Connection status:', connected ? 'Connected' : 'Disconnected');
+          },
+          
+          onThreadsLoaded: (loadedThreads) => {
+            console.log('Threads loaded:', loadedThreads);
+          },
+          
+          onMessagesLoaded: (threadId, loadedMessages) => {
+            // Convert API messages to local format
+            const convertedMessages: Message[] = loadedMessages.map(msg => ({
+              id: msg.id,
+              text: msg.content,
+              sender: msg.sender_id === currentUserId ? 'user' : 'other',
+              timestamp: new Date(msg.created_at),
+              status: msg.status as any
+            }));
+            
+            setMessages(prev => ({
+              ...prev,
+              [threadId]: convertedMessages
+            }));
+          },
+          
+          onMessageReceived: (message) => {
+            // Convert API message to local format
+            const convertedMessage: Message = {
+              id: message.id,
+              text: message.content,
+              sender: message.sender_id === currentUserId ? 'user' : 'other',
+              timestamp: new Date(message.created_at),
+              status: message.status as any,
+              isOptimistic: message.isOptimistic
+            };
+            
+            setMessages(prev => ({
+              ...prev,
+              [message.thread_id]: [...(prev[message.thread_id] || []), convertedMessage]
+            }));
+          },
+          
+          onMessageConfirmed: (tempId, realId) => {
+            // Update optimistic message with real ID
+            setMessages(prev => {
+              const newMessages = { ...prev };
+              Object.keys(newMessages).forEach(threadId => {
+                newMessages[parseInt(threadId)] = newMessages[parseInt(threadId)].map(msg => {
+                  if (msg.id === tempId) {
+                    return { ...msg, id: realId, status: 'sent', isOptimistic: false };
+                  }
+                  return msg;
+                });
+              });
+              return newMessages;
+            });
+          },
+          
+          onTypingStatusChanged: (typing) => {
+            setTypingUsers(prev => {
+              const newTypingUsers = new Map(prev);
+              if (!newTypingUsers.has(typing.thread_id)) {
+                newTypingUsers.set(typing.thread_id, new Set());
+              }
+              
+              const threadTyping = newTypingUsers.get(typing.thread_id)!;
+              if (typing.is_typing) {
+                threadTyping.add(typing.user_id);
+              } else {
+                threadTyping.delete(typing.user_id);
+              }
+              
+              if (threadTyping.size === 0) {
+                newTypingUsers.delete(typing.thread_id);
+              }
+              
+              return newTypingUsers;
+            });
+          },
+          
+          onError: (error) => {
+            console.error('Chat service error:', error);
+            // Show error notification to user
+          }
+        });
+
+        // Join the active chat
+        if (activeChat) {
+          chatService.joinThread(activeChat);
+          await chatService.loadMessages(activeChat);
+        }
+
+      } catch (error) {
+        console.error('Failed to initialize chat service:', error);
+      }
+    };
+
+    initializeChat();
+
+    // Cleanup on unmount
+    return () => {
+      chatService.disconnect();
+    };
+  }, [currentUserId]);
+
+  // Handle active chat changes
+  useEffect(() => {
+    if (activeChat && chatService.isConnected()) {
+      // Leave previous thread if any
+      // Join new thread
+      chatService.joinThread(activeChat);
+      
+      // Load messages for this thread
+      chatService.loadMessages(activeChat);
+    }
+  }, [activeChat]);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = useCallback((): void => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, activeChat]);
+  }, [messages, activeChat, scrollToBottom]);
+
+  // Typing indicator timeout
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleTypingStart = useCallback(() => {
+    if (activeChat && chatService.isConnected()) {
+      chatService.setTyping(activeChat, true);
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Set new timeout to stop typing after 1 second of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        chatService.setTyping(activeChat, false);
+      }, 1000);
+    }
+  }, [activeChat]);
+
+  const sendMessage = useCallback(() => {
+    if (!inputValue.trim() || !activeChat) return;
+
+    if (chatService.isConnected()) {
+      // Send via WebSocket with optimistic update
+      const tempId = chatService.sendMessage(activeChat, inputValue);
+      console.log('Message sent with temp ID:', tempId);
+    } else {
+      // Fallback: create local message for demo
+      const userMessage: Message = {
+        id: Date.now(),
+        text: inputValue,
+        sender: "user",
+        timestamp: new Date(),
+        status: 'pending'
+      };
+
+      setMessages(prev => ({
+        ...prev,
+        [activeChat]: [...(prev[activeChat] || []), userMessage]
+      }));
+
+      // Simulate bot response only for AI Assistant (chat id 1)
+      if (activeChat === 1) {
+        setIsTyping(true);
+        setTimeout(() => {
+          const botMessage: Message = {
+            id: Date.now() + 1,
+            text: "Thanks for your message! This is a simulated response from the AI assistant.",
+            sender: "bot",
+            timestamp: new Date()
+          };
+          setMessages(prev => ({
+            ...prev,
+            [activeChat]: [...(prev[activeChat] || []), botMessage]
+          }));
+          setIsTyping(false);
+        }, 1500);
+      }
+    }
+
+    setInputValue("");
+    
+    // Stop typing indicator
+    if (chatService.isConnected()) {
+      chatService.setTyping(activeChat, false);
+    }
+  }, [inputValue, activeChat]);
 
   const handleSendMessage = (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>): void => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: inputValue,
-      sender: "user",
-      timestamp: new Date()
-    };
-
-    setMessages(prev => ({
-      ...prev,
-      [activeChat]: [...(prev[activeChat] || []), userMessage]
-    }));
-    setInputValue("");
-
-    // Simulate bot response only for AI Assistant (chat id 1)
-    if (activeChat === 1) {
-      setIsTyping(true);
-      setTimeout(() => {
-        const botMessage: Message = {
-          id: Date.now() + 1,
-          text: "Thanks for your message! This is a simulated response from the AI assistant.",
-          sender: "bot",
-          timestamp: new Date()
-        };
-        setMessages(prev => ({
-          ...prev,
-          [activeChat]: [...(prev[activeChat] || []), botMessage]
-        }));
-        setIsTyping(false);
-      }, 1500);
-    }
+    sendMessage();
   };
 
   const formatTime = (timestamp: Date): string => {
@@ -161,12 +341,13 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setInputValue(e.target.value);
+    handleTypingStart();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e as any);
+      sendMessage();
     }
   };
 
@@ -195,7 +376,21 @@ const ChatApp: React.FC<ChatAppProps> = () => {
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+              {/* Connection Status Indicator */}
+              <div className="flex items-center">
+                {isConnected ? (
+                  <div title="Connected">
+                    <Wifi className="h-4 w-4 text-green-500" />
+                  </div>
+                ) : (
+                  <div title="Disconnected">
+                    <WifiOff className="h-4 w-4 text-red-500" />
+                  </div>
+                )}
+              </div>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -334,9 +529,20 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                         message.sender === 'user'
                           ? 'bg-blue-500 text-white rounded-br-none'
                           : 'bg-gray-100 text-gray-900 rounded-bl-none'
-                      }`}
+                      } ${message.isOptimistic ? 'opacity-70' : ''}`}
                     >
                       <p className="text-sm">{message.text}</p>
+                      {/* Message Status Indicator */}
+                      {message.sender === 'user' && (
+                        <div className="flex items-center justify-end mt-1">
+                          <span className="text-xs opacity-75">
+                            {message.status === 'pending' && '⏳'}
+                            {message.status === 'sent' && '✓'}
+                            {message.status === 'delivered' && '✓✓'}
+                            {message.status === 'read' && '✓✓'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <span className="text-xs text-gray-500 mt-1 px-1">
                       {formatTime(message.timestamp)}
@@ -347,12 +553,16 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             ))}
             
             {/* Typing indicator */}
-            {isTyping && activeChat === 1 && (
+            {(isTyping && activeChat === 1) || (typingUsers.has(activeChat) && typingUsers.get(activeChat)!.size > 0) ? (
               <div className="flex justify-start">
                 <div className="flex items-end space-x-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      <Bot className="h-4 w-4" />
+                      {isTyping && activeChat === 1 ? (
+                        <Bot className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                   <div className="bg-gray-100 px-3 py-2 rounded-lg rounded-bl-none">
@@ -364,7 +574,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>

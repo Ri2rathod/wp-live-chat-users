@@ -33,6 +33,7 @@ class WPLCShortcodeManager
      */
     private $vite_build_dir;
 
+    private $used_shortcodes;
     /**
      * Constructor
      * 
@@ -44,7 +45,7 @@ class WPLCShortcodeManager
 
         // Hook into WordPress
         add_action('init', [$this, 'register_shortcodes']);
-        add_action('wp_enqueue_scripts', [$this, 'maybe_enqueue_assets']);
+        add_action('wp_footer', [$this, 'maybe_enqueue_assets']);
     }
 
     /**

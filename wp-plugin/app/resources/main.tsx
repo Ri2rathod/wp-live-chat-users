@@ -2,7 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import ChatApp from './ChatApp';
-import './assets/index.css';
+import "./assets/globals.css"
+
 
 // Type definition for the dataset attributes
 interface ChatAppDataset {
