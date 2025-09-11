@@ -1,18 +1,26 @@
 {
   "name": "socket-server",
-  "module": "index.ts",
+  "version": "1.0.0",
+  "description": "WebSocket server for WP Live Chat Users",
+  "module": "server.js",
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run --watch server.js"
+    "start": "node server.js",
+    "dev": "bun run --watch server.js",
+    "test": "node test-client.js",
+    "install-deps": "npm install"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "socket.io-client": "^4.8.1"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5"
   }
 }
