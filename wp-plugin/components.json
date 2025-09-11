@@ -8,7 +8,7 @@
     "css": "app/resources/assets/index.css",
     "baseColor": "neutral",
     "cssVariables": true,
-    "prefix": ""
+    "prefix": "wplc-"
   },
   "aliases": {
     "components": "@/components",
