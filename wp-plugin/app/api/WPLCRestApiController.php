@@ -41,9 +41,42 @@ class WPLCRestApiController {
     }
 
     /**
+     * Check API key authentication for external access
+     */
+    public function check_api_key_authentication(WP_REST_Request $request) {
+        // Check if API access is enabled
+        if (!get_option('wplc_api_enabled', false)) {
+            return false;
+        }
+        
+        // Check for API key in header or query parameter
+        $api_key = $request->get_header('X-WPLC-API-Key') 
+                  ?? $request->get_param('api_key');
+        
+        if (!empty($api_key)) {
+            $valid_api_key = get_option('wplc_api_key', '');
+            
+            if (!empty($valid_api_key) && hash_equals($valid_api_key, $api_key)) {
+                // Set a pseudo user for API access (use admin user or create a system user)
+                $api_user_id = get_option('wplc_api_user_id', 1); // Default to admin
+                wp_set_current_user($api_user_id);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Check if user has basic permissions to access chat API
      */
     public function check_user_permissions(WP_REST_Request $request) {
+        // First try API key authentication
+        if ($this->check_api_key_authentication($request)) {
+            return true;
+        }
+        
+        // Fall back to regular user authentication
         if (!is_user_logged_in()) {
             return new WP_Error(
                 'rest_not_logged_in',
@@ -85,6 +118,11 @@ class WPLCRestApiController {
         $basic_check = $this->check_user_permissions($request);
         if (is_wp_error($basic_check)) {
             return $basic_check;
+        }
+
+        // If using API key, allow access to all threads (system-level access)
+        if ($this->check_api_key_authentication($request)) {
+            return true;
         }
 
         $thread_id = $request->get_param('thread_id');

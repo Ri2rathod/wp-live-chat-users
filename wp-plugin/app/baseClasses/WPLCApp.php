@@ -8,6 +8,7 @@ defined('ABSPATH') or die('Something went wrong');
 
 use WPLCAPP\database\WPLCDatabaseManager;
 use WPLCAPP\admin\WPLCMigrationAdmin;
+use WPLCAPP\admin\WPLCApiSettingsAdmin;
 use WPLCAPP\api\WPLCRestApiController;
 use WPLCAPP\api\WPLCRestApiRoutes;
 use WPLCAPP\baseClasses\WPLCShortcodeManager;
@@ -32,6 +33,7 @@ final class WPLCApp
         // Initialize admin interface
         if (is_admin()) {
             WPLCMigrationAdmin::instance()->init();
+            WPLCApiSettingsAdmin::instance()->init();
             WPLCChatIntegration::instance()->add_admin_settings();
         }
 

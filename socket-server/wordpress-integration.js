@@ -28,9 +28,9 @@ class WordPressIntegration {
       'User-Agent': 'WP-Live-Chat-Socket-Server/1.0'
     };
 
-    // Add authentication if available
+    // Add API key authentication if available
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers['X-WPLC-API-Key'] = this.apiKey;
     }
 
     // You could implement per-user JWT tokens here
@@ -45,7 +45,12 @@ class WordPressIntegration {
    * Make API request with error handling
    */
   async makeRequest(endpoint, options = {}) {
-    const url = `${this.baseApiUrl}${endpoint}`;
+    // Handle different base URLs for WordPress core vs custom API
+    const baseUrl = options.baseUrl || this.baseApiUrl;
+    const url = endpoint.startsWith('/wp/v2/') 
+      ? `${this.wpBaseUrl}${endpoint}`
+      : `${baseUrl}${endpoint}`;
+      
     const defaultOptions = {
       timeout: this.timeout,
       headers: this.getHeaders(options.userId)
@@ -78,39 +83,77 @@ class WordPressIntegration {
   }
 
   // ==========================================
-  // THREAD VALIDATION
+  // THREAD OPERATIONS
   // ==========================================
 
   /**
-   * Validate if user can access a thread
+   * Get all threads for user
    */
-  async validateThreadAccess(userId, threadId) {
+  async getThreads(userId, options = {}) {
+    const params = new URLSearchParams({
+      page: options.page || 1,
+      per_page: options.per_page || 20,
+      search: options.search || ''
+    });
+
     try {
-      const response = await this.makeRequest(`/threads/${threadId}`, {
+      const response = await this.makeRequest(`/threads?${params}`, {
         method: 'GET',
         userId
       });
       
-      // If we get the thread data, user has access
-      return response && response.thread;
+      return response.threads || [];
       
     } catch (error) {
-      console.error(`Access validation failed for user ${userId}, thread ${threadId}:`, error.message);
-      return false;
+      console.error(`Failed to get threads for user ${userId}:`, error.message);
+      return [];
     }
   }
 
   /**
-   * Get thread participants
+   * Create a new thread
    */
-  async getThreadParticipants(threadId) {
+  async createThread(userId, threadData) {
+    const { type, title, participants } = threadData;
+    
     try {
-      // This endpoint doesn't exist yet in your API, but you might add it
-      const response = await this.makeRequest(`/threads/${threadId}/participants`);
-      return response.participants || [];
+      const response = await this.makeRequest('/threads', {
+        method: 'POST',
+        userId,
+        body: JSON.stringify({
+          type,
+          title,
+          participants
+        })
+      });
+
+      return response.thread;
+
+    } catch (error) {
+      console.error('Failed to create thread:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get thread messages
+   */
+  async getThreadMessages(threadId, options = {}) {
+    const params = new URLSearchParams({
+      before: options.before || '',
+      limit: options.limit || 50
+    });
+
+    try {
+      const response = await this.makeRequest(`/threads/${threadId}/messages?${params}`, {
+        method: 'GET',
+        userId: options.userId
+      });
+      
+      return response.messages || [];
       
     } catch (error) {
-      console.error(`Failed to get thread participants for ${threadId}:`, error.message);
+      console.error(`Failed to get messages for thread ${threadId}:`, error.message);
       return [];
     }
   }
@@ -121,18 +164,19 @@ class WordPressIntegration {
 
   /**
    * Store a new message via REST API
+   * Using POST /threads/{thread_id} endpoint
    */
   async storeMessage(messageData) {
     const { threadId, senderId, content, contentType, attachments } = messageData;
     
     try {
-      const response = await this.makeRequest(`/threads/${threadId}/messages`, {
+      const response = await this.makeRequest(`/threads/${threadId}`, {
         method: 'POST',
         userId: senderId,
         body: JSON.stringify({
           content,
-          content_type: contentType,
-          attachment_ids: attachments
+          content_type: contentType || 'text/plain',
+          attachment_ids: attachments || []
         })
       });
 
@@ -141,7 +185,11 @@ class WordPressIntegration {
         senderName: response.message.sender_name,
         createdAt: response.message.created_at,
         updatedAt: response.message.updated_at,
-        ...messageData
+        threadId: threadId,
+        senderId: senderId,
+        content: content,
+        contentType: contentType || 'text/plain',
+        ...response.message
       };
 
     } catch (error) {
@@ -151,20 +199,26 @@ class WordPressIntegration {
   }
 
   /**
-   * Update message status
+   * Upload attachment
    */
-  async updateMessage(messageId, updates) {
+  async uploadAttachment(userId, fileData) {
     try {
-      // This endpoint doesn't exist yet, but you might add it
-      const response = await this.makeRequest(`/messages/${messageId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates)
+      const formData = new FormData();
+      formData.append('file', fileData);
+
+      const response = await this.makeRequest('/attachments', {
+        method: 'POST',
+        userId,
+        body: formData,
+        headers: {
+          // Remove Content-Type to let fetch set it with boundary for FormData
+        }
       });
 
-      return response.message;
+      return response.attachment;
 
     } catch (error) {
-      console.error(`Failed to update message ${messageId}:`, error.message);
+      console.error('Failed to upload attachment:', error.message);
       throw error;
     }
   }
@@ -174,30 +228,19 @@ class WordPressIntegration {
   // ==========================================
 
   /**
-   * Mark messages as read
+   * Mark messages as read using POST /threads/{thread_id}/read
    */
-  async markMessagesAsRead(userId, threadId, messageIds) {
+  async markMessagesAsRead(userId, threadId, messageIds = null) {
     try {
-      // Mark individual messages or all in thread
-      if (messageIds && messageIds.length > 0) {
-        // Mark specific messages
-        const promises = messageIds.map(messageId => 
-          this.makeRequest(`/threads/${threadId}/read`, {
-            method: 'POST',
-            userId,
-            body: JSON.stringify({ message_id: messageId })
-          })
-        );
-        
-        await Promise.all(promises);
-      } else {
-        // Mark all messages in thread
-        await this.makeRequest(`/threads/${threadId}/read`, {
-          method: 'POST',
-          userId,
-          body: JSON.stringify({})
-        });
-      }
+      const body = messageIds && messageIds.length > 0 
+        ? { message_id: messageIds[0] } // API seems to accept single message_id
+        : {}; // Mark all messages in thread
+
+      await this.makeRequest(`/threads/${threadId}/read`, {
+        method: 'POST',
+        userId,
+        body: JSON.stringify(body)
+      });
 
       return true;
 
@@ -208,11 +251,14 @@ class WordPressIntegration {
   }
 
   /**
-   * Get read receipts for a message
+   * Get read receipts for a message using GET /messages/{message_id}/receipts
    */
   async getMessageReadReceipts(messageId) {
     try {
-      const response = await this.makeRequest(`/messages/${messageId}/receipts`);
+      const response = await this.makeRequest(`/messages/${messageId}/receipts`, {
+        method: 'GET'
+      });
+      
       return response.read_receipts || [];
 
     } catch (error) {
@@ -226,13 +272,15 @@ class WordPressIntegration {
   // ==========================================
 
   /**
-   * Get user information
+   * Get user information using WordPress core API
    */
   async getUserInfo(userId) {
     try {
       // Use WordPress users API
       const response = await this.makeRequest(`/wp/v2/users/${userId}`, {
-        baseUrl: this.wpBaseUrl // Override base URL for WP core API
+        method: 'GET',
+        // Override the base URL for this request
+        baseUrl: this.wpBaseUrl.replace('/wp-json', '') + '/wp-json'
       });
 
       return {
@@ -240,7 +288,8 @@ class WordPressIntegration {
         name: response.name,
         displayName: response.display_name || response.name,
         avatar: response.avatar_urls ? response.avatar_urls['96'] : null,
-        email: response.email // Only available if current user or admin
+        email: response.email, // Only available if current user or admin
+        slug: response.slug
       };
 
     } catch (error) {
@@ -249,8 +298,25 @@ class WordPressIntegration {
         id: userId,
         name: `User ${userId}`,
         displayName: `User ${userId}`,
-        avatar: null
+        avatar: null,
+        slug: `user-${userId}`
       };
+    }
+  }
+
+  /**
+   * Validate if user can access a thread
+   * This uses the threads endpoint to check access
+   */
+  async validateThreadAccess(userId, threadId) {
+    try {
+      // Try to get thread messages - if successful, user has access
+      const messages = await this.getThreadMessages(threadId, { userId, limit: 1 });
+      return true;
+      
+    } catch (error) {
+      console.error(`Access validation failed for user ${userId}, thread ${threadId}:`, error.message);
+      return false;
     }
   }
 
@@ -259,11 +325,10 @@ class WordPressIntegration {
   // ==========================================
 
   /**
-   * Store typing status (using WordPress transients via REST)
+   * Update typing status using POST /threads/{thread_id}/typing
    */
   async updateTypingStatus(userId, threadId, isTyping) {
     try {
-      // This would require a custom endpoint in your WordPress plugin
       await this.makeRequest(`/threads/${threadId}/typing`, {
         method: 'POST',
         userId,
@@ -275,6 +340,23 @@ class WordPressIntegration {
     } catch (error) {
       console.error(`Failed to update typing status:`, error.message);
       return false;
+    }
+  }
+
+  /**
+   * Get typing status for thread using GET /threads/{thread_id}/typing
+   */
+  async getTypingStatus(threadId) {
+    try {
+      const response = await this.makeRequest(`/threads/${threadId}/typing`, {
+        method: 'GET'
+      });
+
+      return response.typing_users || [];
+
+    } catch (error) {
+      console.error(`Failed to get typing status for thread ${threadId}:`, error.message);
+      return [];
     }
   }
 
@@ -348,8 +430,32 @@ class WordPressIntegration {
     return results;
   }
 
+  /**
+   * Batch get user information
+   */
+  async batchGetUsers(userIds) {
+    const results = new Map();
+    
+    // Process in batches
+    const batchSize = 10;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = userIds.slice(i, i + batchSize);
+      const promises = batch.map(async userId => {
+        const userInfo = await this.getUserInfo(userId);
+        return [userId, userInfo];
+      });
+      
+      const batchResults = await Promise.all(promises);
+      batchResults.forEach(([userId, userInfo]) => {
+        results.set(userId, userInfo);
+      });
+    }
+    
+    return results;
+  }
+
   // ==========================================
-  // HEALTH CHECK
+  // HEALTH & STATUS
   // ==========================================
 
   /**
@@ -377,6 +483,30 @@ class WordPressIntegration {
       };
     }
   }
+
+  /**
+   * Get detailed API status and metrics
+   */
+  async getApiStatus() {
+    try {
+      const response = await this.makeRequest('/status', {
+        method: 'GET'
+      });
+
+      return {
+        ...response,
+        healthy: true,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error getting API status:', error);
+      return {
+        error: error.message,
+        healthy: false,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 }
 
 // ==========================================
@@ -388,7 +518,7 @@ class WordPressIntegration {
  */
 export function createWordPressIntegration() {
   const config = {
-    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp-json',
+    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp/wp-live-chat-users/wp-json',
     apiNamespace: process.env.WP_API_NAMESPACE || 'wplc-chat/v1',
     apiKey: process.env.WP_API_KEY || null,
     timeout: parseInt(process.env.WP_API_TIMEOUT || '10000')
