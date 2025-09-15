@@ -13,6 +13,22 @@ import {
 import { chatService } from './ChatService';
 
 // Type definitions
+interface ChatThread {
+  id: number;
+  type: 'private' | 'group';
+  title: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  participants?: any[];
+  last_message?: {
+    content: string;
+    created_at: string;
+    sender_id: number;
+  };
+  unread_count?: number;
+}
+
 interface ChatItem {
   id: number;
   name: string;
@@ -21,6 +37,7 @@ interface ChatItem {
   unread: number;
   avatar: string | null;
   isBot: boolean;
+  type: 'private' | 'group';
 }
 
 interface Message {
@@ -41,75 +58,42 @@ interface ChatAppProps {
 }
 
 const ChatApp: React.FC<ChatAppProps> = () => {
-  const [activeChat, setActiveChat] = useState<number>(1);
+  const [activeChat, setActiveChat] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
+  const [chatList, setChatList] = useState<ChatItem[]>([]);
+  const [messages, setMessages] = useState<MessagesState>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Current user ID (get from WordPress API settings)
   const currentUserId = (window as any).wpApiSettings?.currentUser?.id || 1;
 
-  // Mock data for chat list (will be replaced with real data from API)
-  const [chatList] = useState<ChatItem[]>([
-    {
-      id: 1,
-      name: "AI Assistant",
-      lastMessage: "Hello! How can I help you today?",
-      timestamp: "2m ago",
-      unread: 0,
-      avatar: null,
-      isBot: true
-    },
-    {
-      id: 2,
-      name: "John Smith",
-      lastMessage: "Thanks for the help yesterday!",
-      timestamp: "1h ago",
-      unread: 2,
-      avatar: null,
-      isBot: false
-    },
-    {
-      id: 3,
-      name: "Sarah Wilson",
-      lastMessage: "Can we schedule a meeting?",
-      timestamp: "3h ago",
-      unread: 1,
-      avatar: null,
-      isBot: false
-    },
-    {
-      id: 4,
-      name: "Team Chat",
-      lastMessage: "Great work everyone!",
-      timestamp: "1d ago",
-      unread: 0,
-      avatar: null,
-      isBot: false
-    }
-  ]);
+  // Helper function to convert thread to chat item
+  const convertThreadToChatItem = (thread: ChatThread): ChatItem => {
+    const timeAgo = (date: string) => {
+      const now = new Date();
+      const threadDate = new Date(date);
+      const diffInMinutes = Math.floor((now.getTime() - threadDate.getTime()) / (1000 * 60));
+      
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+      return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    };
 
-  // Mock messages for each chat (will be replaced with real data from API)
-  const [messages, setMessages] = useState<MessagesState>({
-    1: [
-      { id: 1, text: "Hello! How can I help you today?", sender: "bot", timestamp: new Date() },
-    ],
-    2: [
-      { id: 1, text: "Hey! How are you doing?", sender: "user", timestamp: new Date(Date.now() - 3600000) },
-      { id: 2, text: "I'm doing great! Thanks for asking.", sender: "other", timestamp: new Date(Date.now() - 3500000) },
-      { id: 3, text: "Thanks for the help yesterday!", sender: "other", timestamp: new Date(Date.now() - 3000000) },
-    ],
-    3: [
-      { id: 1, text: "Hi Sarah!", sender: "user", timestamp: new Date(Date.now() - 7200000) },
-      { id: 2, text: "Can we schedule a meeting?", sender: "other", timestamp: new Date(Date.now() - 7000000) },
-    ],
-    4: [
-      { id: 1, text: "Great work everyone!", sender: "other", timestamp: new Date(Date.now() - 86400000) },
-    ]
-  });
+    return {
+      id: thread.id,
+      name: thread.title || `Thread ${thread.id}`,
+      lastMessage: thread.last_message?.content || 'No messages yet',
+      timestamp: timeAgo(thread.last_message?.created_at || thread.created_at),
+      unread: thread.unread_count || 0,
+      avatar: null,
+      isBot: false,
+      type: thread.type
+    };
+  };
 
   // Initialize chat service
   useEffect(() => {
@@ -135,6 +119,14 @@ const ChatApp: React.FC<ChatAppProps> = () => {
           
           onThreadsLoaded: (loadedThreads) => {
             console.log('Threads loaded:', loadedThreads);
+            // Convert API threads to chat items
+            const chatItems = loadedThreads.map(convertThreadToChatItem);
+            setChatList(chatItems);
+            
+            // Set first thread as active if no active chat
+            if (chatItems.length > 0 && !activeChat) {
+              setActiveChat(chatItems[0].id);
+            }
           },
           
           onMessagesLoaded: (threadId, loadedMessages) => {
@@ -168,6 +160,9 @@ const ChatApp: React.FC<ChatAppProps> = () => {
               ...prev,
               [message.thread_id]: [...(prev[message.thread_id] || []), convertedMessage]
             }));
+
+            // Update chat list with latest message
+            updateChatListWithMessage(message);
           },
           
           onMessageConfirmed: (tempId, realId) => {
@@ -214,7 +209,9 @@ const ChatApp: React.FC<ChatAppProps> = () => {
           }
         });
 
-        // Join the active chat
+        // Join the active chat and load threads
+        await chatService.loadThreads();
+        
         if (activeChat) {
           chatService.joinThread(activeChat);
           await chatService.loadMessages(activeChat);
@@ -351,8 +348,46 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     }
   };
 
+  const createNewThread = useCallback(async () => {
+    if (!chatService.isConnected()) {
+      console.warn('Cannot create thread: not connected to chat service');
+      return;
+    }
+
+    try {
+      // Create a new private thread with current user as participant
+      const newThread = await chatService.createThread('private', [currentUserId], `New Chat ${Date.now()}`);
+
+      if (newThread) {
+        // Convert to chat item and add to list
+        const newChatItem = convertThreadToChatItem(newThread);
+        setChatList(prev => [newChatItem, ...prev]);
+        
+        // Set as active chat
+        setActiveChat(newThread.id);
+        
+        console.log('New thread created:', newThread);
+      }
+    } catch (error) {
+      console.error('Failed to create new thread:', error);
+    }
+  }, [convertThreadToChatItem, currentUserId]);
+
+  const updateChatListWithMessage = useCallback((message: any) => {
+    setChatList(prev => prev.map(chat => {
+      if (chat.id === message.thread_id) {
+        return {
+          ...chat,
+          lastMessage: message.content,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ago'
+        };
+      }
+      return chat;
+    }));
+  }, []);
+
   const getAvatarFallback = (chat: ChatItem): string => {
-    if (chat.isBot) return '';
+    if (chat?.isBot) return '';
     return chat.name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -367,7 +402,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   );
 
   const currentChat: ChatItem | undefined = chatList.find(chat => chat.id === activeChat);
-  const currentMessages: Message[] = messages[activeChat] || [];
+  const currentMessages: Message[] = activeChat ? (messages[activeChat] || []) : [];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -420,7 +455,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                 className="pl-10"
               />
             </div>
-            <Button size="sm" className="shrink-0">
+            <Button size="sm" className="shrink-0" onClick={createNewThread}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -429,7 +464,21 @@ const ChatApp: React.FC<ChatAppProps> = () => {
         {/* Chat List */}
         <ScrollArea className="flex-1">
           <div className="p-2">
-            {filteredChats.map((chat) => (
+            {filteredChats.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="mb-4">No conversations yet</p>
+                <Button 
+                  onClick={createNewThread}
+                  variant="outline" 
+                  size="sm"
+                  disabled={!isConnected}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start a chat
+                </Button>
+              </div>
+            ) : (
+              filteredChats.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => handleChatClick(chat.id)}
@@ -470,39 +519,42 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </ScrollArea>
       </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={currentChat?.avatar || undefined} />
-              <AvatarFallback>
-                {currentChat?.isBot ? (
-                  <Bot className="h-5 w-5" />
-                ) : (
-                  getAvatarFallback(currentChat!)
-                )}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-medium text-gray-900">{currentChat?.name}</h3>
-              <p className="text-sm text-gray-500">
-                {currentChat?.isBot ? 'AI Assistant' : 'Online'}
-              </p>
+        {activeChat && currentChat ? (
+          <>
+            {/* Chat Header */}
+            <div className="bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={currentChat?.avatar || undefined} />
+                  <AvatarFallback>
+                    {currentChat?.isBot ? (
+                      <Bot className="h-5 w-5" />
+                    ) : (
+                      getAvatarFallback(currentChat!)
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium text-gray-900">{currentChat?.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {currentChat?.isBot ? 'AI Assistant' : 'Online'}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            {currentMessages.map((message) => (
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {currentMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${
@@ -553,7 +605,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             ))}
             
             {/* Typing indicator */}
-            {(isTyping && activeChat === 1) || (typingUsers.has(activeChat) && typingUsers.get(activeChat)!.size > 0) ? (
+            {activeChat && ((isTyping && activeChat === 1) || (typingUsers.has(activeChat) && typingUsers.get(activeChat)!.size > 0)) ? (
               <div className="flex justify-start">
                 <div className="flex items-end space-x-2">
                   <Avatar className="h-8 w-8">
@@ -577,31 +629,46 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             ) : null}
             <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+            </ScrollArea>
 
-        {/* Message Input */}
-        <div className="bg-white border-t border-gray-200 p-4">
-          <div className="flex space-x-2">
-            <Input
-              value={inputValue}
-              onChange={handleInputChange}
-              placeholder="Type a message..."
-              className="flex-1"
-              disabled={isTyping}
-              onKeyDown={handleKeyDown}
-            />
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isTyping}
-              size="sm"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {/* Message Input */}
+            <div className="bg-white border-t border-gray-200 p-4">
+              <div className="flex space-x-2">
+                <Input
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  placeholder="Type a message..."
+                  className="flex-1"
+                  disabled={isTyping}
+                  onKeyDown={handleKeyDown}
+                />
+                <Button 
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isTyping}
+                  size="sm"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Empty State */
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No conversation selected</h3>
+              <p className="text-gray-500 mb-4">Choose a conversation from the sidebar or start a new one</p>
+              <Button 
+                onClick={createNewThread}
+                disabled={!isConnected}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Start new conversation
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default ChatApp;
+};export default ChatApp;
