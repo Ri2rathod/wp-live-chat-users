@@ -55,6 +55,66 @@ class WPLCRestApiRoutes
         $this->register_attachments_routes();
         $this->register_typing_routes();
         $this->register_read_receipts_routes();
+        $this->register_users_routes();
+    }
+
+    /**
+     * Register users endpoints
+     */
+    private function register_users_routes()
+    {
+        register_rest_route($this->namespace, '/users', array(
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => array($this->controller, 'get_users'),
+            'permission_callback' => array($this->controller, 'check_user_permissions'),
+            'args' => array(
+                'exclude' => array(
+                    'default' => array(),
+                    'validate_callback' => function ($param) {
+                        return is_array($param) || is_numeric($param);
+                    },
+                    'sanitize_callback' => function ($param) {
+                        if (is_numeric($param)) {
+                            return array(absint($param));
+                        }
+                        return array_map('absint', $param);
+                    }
+                ),
+                'include' => array(
+                    'default' => array(),
+                    'validate_callback' => function ($param) {
+                        return is_array($param) || is_numeric($param);
+                    },
+                    'sanitize_callback' => function ($param) {
+                        if (is_numeric($param)) {
+                            return array(absint($param));
+                        }
+                        return array_map('absint', $param);
+                    }
+                ),
+                'per_page' => array(
+                    'default' => 20,
+                    'validate_callback' => function ($param) {
+                        return is_numeric($param) && $param > 0 && $param <= 100;
+                    },
+                    'sanitize_callback' => 'absint'
+                ),
+                'search' => array(
+                    'default' => '',
+                    'validate_callback' => function ($param) {
+                        return is_string($param);
+                    },
+                    'sanitize_callback' => 'sanitize_text_field'
+                ),
+                'role' => array(
+                    'default' => '',
+                    'validate_callback' => function ($param) {
+                        return is_string($param);
+                    },
+                    'sanitize_callback' => 'sanitize_text_field'
+                )
+            )
+        ));
     }
 
     /**

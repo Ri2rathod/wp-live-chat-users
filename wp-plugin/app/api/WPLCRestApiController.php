@@ -146,27 +146,28 @@ class WPLCRestApiController {
         global $wpdb;
 
         $thread_table = $wpdb->prefix . 'wplc_message_threads';
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
         
-        // Get thread info
-        $thread = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$thread_table} WHERE id = %d",
+        // Get thread info and check if user is a participant
+        $result = $wpdb->get_row($wpdb->prepare(
+            "SELECT t.*, p.role as participant_role 
+            FROM {$thread_table} t
+            LEFT JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
+            WHERE t.id = %d",
+            $user_id,
             $thread_id
         ));
 
-        if (!$thread) {
+        if (!$result) {
             return false;
         }
 
-        // Thread creator can always access
-        if ($thread->created_by == $user_id) {
+        // User is a participant
+        if (!empty($result->participant_role)) {
             return true;
         }
 
-        // TODO: For group chats, check if user is a participant
-        // This would require a thread_participants table
-        // For now, we'll use a filter to allow plugins to customize access
-        
-        return apply_filters('wplc_user_can_access_thread', false, $user_id, $thread_id, $thread);
+        return apply_filters('wplc_user_can_access_thread', false, $user_id, $thread_id, $result);
     }
 
     /**
@@ -326,17 +327,42 @@ class WPLCRestApiController {
         
         $data = $this->sanitize_thread_data($request->get_params());
         
-        // Validate participants for private chats
-        if ($data['type'] === 'private' && count($data['participants']) !== 1) {
+        // Validate participants array
+        if (empty($data['participants']) || !is_array($data['participants'])) {
             return new WP_Error(
                 'invalid_participants',
-                __('Private chats must have exactly one other participant.', 'wp-live-chat-users'),
+                __('Participants must be provided as an array of user IDs.', 'wp-live-chat-users'),
                 array('status' => 400)
             );
         }
 
-        // Check if private thread already exists
+        // Remove duplicates from participants array
+        $data['participants'] = array_unique(array_map('intval', $data['participants']));
+
+        // Verify all participants exist and can access chat
+        foreach ($data['participants'] as $participant_id) {
+            $participant = get_user_by('ID', $participant_id);
+            if (!$participant || !user_can($participant_id, 'read')) {
+                return new WP_Error(
+                    'invalid_participant',
+                    sprintf(__('Invalid participant ID: %d', 'wp-live-chat-users'), $participant_id),
+                    array('status' => 400)
+                );
+            }
+        }
+
+        // Validate based on thread type
         if ($data['type'] === 'private') {
+            // Private chats must have exactly one other participant
+            if (count($data['participants'])  < 2) {
+                return new WP_Error(
+                    'invalid_participants_count',
+                    __('Private chats must have exactly one other participant.', 'wp-live-chat-users'),
+                    array('status' => 400)
+                );
+            }
+
+            // Check if private thread already exists
             $other_user_id = $data['participants'][0];
             $existing_thread = $this->find_private_thread($user_id, $other_user_id);
             if ($existing_thread) {
@@ -344,6 +370,15 @@ class WPLCRestApiController {
                     'thread' => $this->format_thread_response($existing_thread),
                     'message' => __('Thread already exists.', 'wp-live-chat-users')
                 ), 200);
+            }
+        } else {
+            // Group chats require at least one other participant
+            if (count($data['participants']) < 1) {
+                return new WP_Error(
+                    'invalid_participants_count',
+                    __('Group chats must have at least one participant.', 'wp-live-chat-users'),
+                    array('status' => 400)
+                );
             }
         }
 
@@ -369,9 +404,56 @@ class WPLCRestApiController {
 
         $thread_id = $wpdb->insert_id;
         
-        // TODO: Add participants to thread_participants table for group chats
+        // Add thread participants
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
         
-        // Get the created thread
+        // Add creator as owner
+        $wpdb->insert($participants_table, array(
+            'thread_id' => $thread_id,
+            'user_id' => $user_id,
+            'role' => 'owner',
+            'joined_at' => current_time('mysql')
+        ));
+        
+        // Add other participants
+        foreach ($data['participants'] as $participant_id) {
+            // Skip if this is the thread creator (already added as owner)
+            if ($participant_id == $user_id) {
+                continue;
+            }
+
+            // Check if participant is already added
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+                $thread_id,
+                $participant_id
+            ));
+
+            if ($exists) {
+                continue;
+            }
+
+            $result = $wpdb->insert($participants_table, array(
+                'thread_id' => $thread_id,
+                'user_id' => $participant_id,
+                'role' => 'member',
+                'joined_at' => current_time('mysql')
+            ));
+
+            if ($result === false) {
+                // Clean up the thread and its participants if insertion fails
+                $wpdb->delete($participants_table, array('thread_id' => $thread_id));
+                $wpdb->delete($threads_table, array('id' => $thread_id));
+                
+                return new WP_Error(
+                    'participant_creation_failed',
+                    sprintf(__('Failed to add participant: %d', 'wp-live-chat-users'), $participant_id),
+                    array('status' => 500)
+                );
+            }
+        }
+        
+        // Get the created thread with participants
         $thread = $wpdb->get_row($wpdb->prepare(
             "SELECT t.*, u.display_name as created_by_name, u.user_email as created_by_email 
              FROM {$threads_table} t 
@@ -384,6 +466,208 @@ class WPLCRestApiController {
             'thread' => $this->format_thread_response($thread),
             'message' => __('Thread created successfully.', 'wp-live-chat-users')
         ), 201);
+    }
+
+    /**
+     * Get thread participants
+     */
+    public function get_thread_participants(WP_REST_Request $request) {
+        $thread_id = $request->get_param('thread_id');
+        
+        global $wpdb;
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        
+        $participants = $wpdb->get_results($wpdb->prepare(
+            "SELECT p.*, u.display_name, u.user_email 
+            FROM {$participants_table} p
+            LEFT JOIN {$wpdb->users} u ON p.user_id = u.ID
+            WHERE p.thread_id = %d
+            ORDER BY p.role = 'owner' DESC, p.role = 'admin' DESC, p.joined_at ASC",
+            $thread_id
+        ));
+        
+        return new WP_REST_Response(array(
+            'participants' => array_map(function($participant) {
+                return array(
+                    'id' => $participant->user_id,
+                    'name' => $participant->display_name,
+                    'email' => $participant->user_email,
+                    'role' => $participant->role,
+                    'joined_at' => $participant->joined_at
+                );
+            }, $participants)
+        ), 200);
+    }
+
+    /**
+     * Add participant to thread
+     */
+    public function add_thread_participant(WP_REST_Request $request) {
+        $thread_id = $request->get_param('thread_id');
+        $user_id = $request->get_param('user_id');
+        $role = $request->get_param('role') ?? 'member';
+        
+        // Validate role
+        if (!in_array($role, ['member', 'admin'])) {
+            return new WP_Error(
+                'invalid_role',
+                __('Invalid participant role.', 'wp-live-chat-users'),
+                array('status' => 400)
+            );
+        }
+        
+        global $wpdb;
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        
+        // Check if already a participant
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            $thread_id,
+            $user_id
+        ));
+        
+        if ($existing) {
+            return new WP_Error(
+                'already_participant',
+                __('User is already a participant in this thread.', 'wp-live-chat-users'),
+                array('status' => 400)
+            );
+        }
+        
+        // Add participant
+        $result = $wpdb->insert($participants_table, array(
+            'thread_id' => $thread_id,
+            'user_id' => $user_id,
+            'role' => $role,
+            'joined_at' => current_time('mysql')
+        ));
+        
+        if ($result === false) {
+            return new WP_Error(
+                'add_participant_failed',
+                __('Failed to add participant.', 'wp-live-chat-users'),
+                array('status' => 500)
+            );
+        }
+        
+        return new WP_REST_Response(array(
+            'message' => __('Participant added successfully.', 'wp-live-chat-users')
+        ), 201);
+    }
+
+    /**
+     * Update participant role
+     */
+    public function update_participant_role(WP_REST_Request $request) {
+        $thread_id = $request->get_param('thread_id');
+        $user_id = $request->get_param('user_id');
+        $new_role = $request->get_param('role');
+        
+        // Validate role
+        if (!in_array($new_role, ['member', 'admin'])) {
+            return new WP_Error(
+                'invalid_role',
+                __('Invalid participant role.', 'wp-live-chat-users'),
+                array('status' => 400)
+            );
+        }
+        
+        global $wpdb;
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        
+        // Cannot modify owner role
+        $participant = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            $thread_id,
+            $user_id
+        ));
+        
+        if (!$participant) {
+            return new WP_Error(
+                'participant_not_found',
+                __('Participant not found.', 'wp-live-chat-users'),
+                array('status' => 404)
+            );
+        }
+        
+        if ($participant->role === 'owner') {
+            return new WP_Error(
+                'cannot_modify_owner',
+                __('Cannot modify the owner role.', 'wp-live-chat-users'),
+                array('status' => 400)
+            );
+        }
+        
+        // Update role
+        $result = $wpdb->update(
+            $participants_table,
+            array('role' => $new_role),
+            array('thread_id' => $thread_id, 'user_id' => $user_id)
+        );
+        
+        if ($result === false) {
+            return new WP_Error(
+                'update_role_failed',
+                __('Failed to update participant role.', 'wp-live-chat-users'),
+                array('status' => 500)
+            );
+        }
+        
+        return new WP_REST_Response(array(
+            'message' => __('Participant role updated successfully.', 'wp-live-chat-users')
+        ), 200);
+    }
+
+    /**
+     * Remove participant from thread
+     */
+    public function remove_thread_participant(WP_REST_Request $request) {
+        $thread_id = $request->get_param('thread_id');
+        $user_id = $request->get_param('user_id');
+        
+        global $wpdb;
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        
+        // Cannot remove owner
+        $participant = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            $thread_id,
+            $user_id
+        ));
+        
+        if (!$participant) {
+            return new WP_Error(
+                'participant_not_found',
+                __('Participant not found.', 'wp-live-chat-users'),
+                array('status' => 404)
+            );
+        }
+        
+        if ($participant->role === 'owner') {
+            return new WP_Error(
+                'cannot_remove_owner',
+                __('Cannot remove the thread owner.', 'wp-live-chat-users'),
+                array('status' => 400)
+            );
+        }
+        
+        // Remove participant
+        $result = $wpdb->delete(
+            $participants_table,
+            array('thread_id' => $thread_id, 'user_id' => $user_id)
+        );
+        
+        if ($result === false) {
+            return new WP_Error(
+                'remove_participant_failed',
+                __('Failed to remove participant.', 'wp-live-chat-users'),
+                array('status' => 500)
+            );
+        }
+        
+        return new WP_REST_Response(array(
+            'message' => __('Participant removed successfully.', 'wp-live-chat-users')
+        ), 200);
     }
 
     /**
@@ -805,28 +1089,139 @@ class WPLCRestApiController {
     }
 
     /**
+     * Get users that can participate in chat
+     */
+    public function get_users(WP_REST_Request $request) {
+        // Get the current user
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->ID) {
+            return new WP_Error(
+                'rest_forbidden',
+                __('You must be logged in to access this endpoint.', 'wp-live-chat-users'),
+                array('status' => 401)
+            );
+        }
+
+        // Get query parameters
+        $exclude = $request->get_param('exclude');
+        $include = $request->get_param('include');
+        $per_page = $request->get_param('per_page');
+        $search = $request->get_param('search');
+        $role = $request->get_param('role');
+
+        // Set up the query args
+        $args = array(
+            'number' => $per_page,
+            'orderby' => 'display_name',
+            'order' => 'ASC',
+            'fields' => 'all_with_meta'
+        );
+
+        // Add search if provided
+        if (!empty($search)) {
+            $args['search'] = '*' . $search . '*';
+            $args['search_columns'] = array('user_login', 'user_nicename', 'user_email', 'display_name');
+        }
+
+        // Add role if provided
+        if (!empty($role)) {
+            $args['role'] = $role;
+        }
+
+        // Add exclude list
+        if (!empty($exclude)) {
+            $args['exclude'] = $exclude;
+        }
+
+        // Add include list
+        if (!empty($include)) {
+            $args['include'] = $include;
+        }
+
+        // Get users who can access chat
+        $args = apply_filters('wplc_user_query_args', $args);
+        $users = get_users($args);
+
+        // Format the response
+        $formatted_users = array();
+        foreach ($users as $user) {
+            // Skip if user doesn't have permission to use chat
+            if (!user_can($user->ID, 'read')) {
+                continue;
+            }
+
+            // Get avatar URL
+            $avatar_url = get_avatar_url($user->ID, array('size' => 96));
+
+            $user_data = array(
+                'id' => $user->ID,
+                'name' => $user->display_name,
+                'username' => $user->user_login,
+                'avatar_url' => $avatar_url,
+                'roles' => $user->roles,
+                'capabilities' => array_keys(array_filter($user->allcaps)),
+                'last_active' => get_user_meta($user->ID, 'last_active', true),
+                'is_online' => $this->is_user_online($user->ID)
+            );
+
+            // Allow plugins to modify user data
+            $user_data = apply_filters('wplc_user_response_data', $user_data, $user);
+            
+            $formatted_users[] = $user_data;
+        }
+
+        return new WP_REST_Response($formatted_users, 200);
+    }
+
+    /**
+     * Check if a user is currently online
+     */
+    private function is_user_online($user_id) {
+        $last_active = get_user_meta($user_id, 'last_active', true);
+        if (empty($last_active)) {
+            return false;
+        }
+
+        // Consider user online if active in the last 5 minutes
+        $online_threshold = 5 * MINUTE_IN_SECONDS;
+        return (time() - intval($last_active)) < $online_threshold;
+    }
+
+    /**
      * Find existing private thread between two users
      */
     private function find_private_thread($user1_id, $user2_id) {
         global $wpdb;
         
         $threads_table = $wpdb->prefix . 'wplc_message_threads';
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
         
-        // For now, we'll check if there's a private thread created by either user
-        // In a more complete implementation, you'd have a thread_participants table
-        $thread = $wpdb->get_row($wpdb->prepare(
+        // Find threads where exactly these two users are participants
+        $query = $wpdb->prepare(
             "SELECT t.*, u.display_name as created_by_name, u.user_email as created_by_email 
-             FROM {$threads_table} t 
-             LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID 
-             WHERE t.type = 'private' 
-             AND ((t.created_by = %d) OR (t.created_by = %d))
-             ORDER BY t.created_at DESC 
-             LIMIT 1",
+            FROM {$threads_table} t
+            INNER JOIN {$participants_table} p1 ON t.id = p1.thread_id
+            INNER JOIN {$participants_table} p2 ON t.id = p2.thread_id
+            LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
+            WHERE t.type = 'private'
+            AND (
+                (p1.user_id = %d AND p2.user_id = %d)
+            )
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM {$participants_table} p3 
+                WHERE p3.thread_id = t.id 
+                AND p3.user_id NOT IN (%d, %d)
+            )
+            LIMIT 1",
+            $user1_id,
+            $user2_id,
             $user1_id,
             $user2_id
-        ));
+        );
         
-        return $thread;
+        return $wpdb->get_row($query);
+         
     }
 
     /**

@@ -7,14 +7,14 @@ import path from "path"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    react(),
+    tailwindcss(),
     v4wp({
       input: {
         main: 'app/resources/main.tsx',
       },
       outDir: 'static',
     }),
-    react(),
-    tailwindcss()
   ],
   resolve: {
     alias: {

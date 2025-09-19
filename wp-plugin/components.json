@@ -4,11 +4,10 @@
   "rsc": false,
   "tsx": true,
   "tailwind": {
-    "config": "",
+    "config": "tailwind.config.js",
     "css": "app/resources/assets/index.css",
     "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": "wplc-"
+    "cssVariables": true
   },
   "aliases": {
     "components": "@/components",
