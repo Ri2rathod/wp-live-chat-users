@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigation } from './components/Navigation';
 import { OverviewSection } from './components/sections/OverviewSection';
+import { BuyMeCoffeeWidget } from './components/BuyMeCoffeeWidget';
 import { FeaturesSection } from './components/sections/FeaturesSection';
 import { ArchitectureSection } from './components/sections/ArchitectureSection';
 import { InstallationSection } from './components/sections/InstallationSection';
