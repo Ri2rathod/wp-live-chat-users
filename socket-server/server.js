@@ -374,6 +374,15 @@ function initializeUserConnection(socket) {
   }
   userPresence.get(socket.userId).socketIds.add(socket.id);
   userPresence.get(socket.userId).status = "online";
+
+  // Broadcast presence status to all connected clients
+  socket.broadcast.emit("presence:status", {
+    user_id: socket.userId,
+    status: "online",
+    last_seen: new Date().toISOString()
+  });
+
+  console.log(`✅ User ${socket.userId} presence initialized and broadcast`);
 }
 
 /**

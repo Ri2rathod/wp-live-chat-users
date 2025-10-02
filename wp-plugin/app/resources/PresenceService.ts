@@ -176,6 +176,7 @@ class PresenceService {
       return;
     }
 
+    console.log('📋 Requesting presence for users:', userIds);
     this.socket.emit('presence:request', { user_ids: userIds });
   }
 

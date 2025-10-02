@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff, X, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,9 +161,20 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     const isOnline = otherUserId ? chatService.isUserOnline(otherUserId) : false;
     const lastSeen = otherUserId ? chatService.getLastSeen(otherUserId) : undefined;
 
+    // For private threads, show the other user's name
+    let threadName = thread.title || `Thread ${thread.id}`;
+    if (thread.type === 'private' && thread.participants) {
+      const otherParticipant = thread.participants.find(
+        (p: any) => (p.user_id || p.id) !== currentUserId
+      );
+      if (otherParticipant) {
+        threadName = otherParticipant.display_name || otherParticipant.name || threadName;
+      }
+    }
+
     return {
       id: thread.id,
-      name: thread.title || `Thread ${thread.id}`,
+      name: threadName,
       lastMessage: thread.last_message?.content || 'No messages yet',
       timestamp: timeAgo(thread.last_message?.created_at || thread.created_at),
       unread: thread.unread_count || 0,
@@ -209,6 +220,24 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             // Set first thread as active if no active chat
             if (chatItems.length > 0 && !activeChat) {
               setActiveChat(chatItems[0].id);
+            }
+
+            // Request presence for all participants in threads
+            const allParticipantIds = new Set<number>();
+            loadedThreads.forEach(thread => {
+              if (thread.participants) {
+                thread.participants.forEach(p => {
+                  if (p.user_id !== currentUserId) {
+                    allParticipantIds.add(p.user_id);
+                  }
+                });
+              }
+            });
+            
+            if (allParticipantIds.size > 0) {
+              const participantArray = Array.from(allParticipantIds);
+              console.log('Requesting presence for participants:', participantArray);
+              chatService.requestPresence(participantArray);
             }
           },
 
@@ -326,16 +355,21 @@ const ChatApp: React.FC<ChatAppProps> = () => {
           onUserPresenceChanged: (presence) => {
             console.log('User presence changed:', presence);
             // Update chat list with new presence info
-            setChatList(prev => prev.map(chat => {
-              if (chat.participantIds?.includes(presence.user_id)) {
-                return {
-                  ...chat,
-                  isOnline: presence.status === 'online',
-                  lastSeen: chatService.getLastSeen(presence.user_id)
-                };
-              }
-              return chat;
-            }));
+            setChatList(prev => {
+              const updated = prev.map(chat => {
+                if (chat.participantIds?.includes(presence.user_id)) {
+                  const newLastSeen = chatService.getLastSeen(presence.user_id);
+                  console.log(`Updating chat ${chat.id}: isOnline=${presence.status === 'online'}, lastSeen=${newLastSeen}`);
+                  return {
+                    ...chat,
+                    isOnline: presence.status === 'online',
+                    lastSeen: newLastSeen
+                  };
+                }
+                return chat;
+              });
+              return updated;
+            });
           },
 
           onBulkPresenceUpdate: (presences) => {
@@ -736,7 +770,19 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const currentChat: ChatItem | undefined = chatList.find(chat => chat.id === activeChat);
+  const currentChat: ChatItem | undefined = useMemo(() => {
+    const chat = chatList.find(chat => chat.id === activeChat);
+    if (chat) {
+      console.log('Current chat updated:', { 
+        id: chat.id, 
+        name: chat.name, 
+        isOnline: chat.isOnline, 
+        lastSeen: chat.lastSeen 
+      });
+    }
+    return chat;
+  }, [chatList, activeChat]);
+  
   const currentMessages: Message[] = activeChat ? (messages[activeChat] || []) : [];
 
   return (

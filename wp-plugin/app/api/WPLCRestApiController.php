@@ -1215,6 +1215,27 @@ class WPLCRestApiController {
      * Format thread response
      */
     private function format_thread_response($thread) {
+        global $wpdb;
+        
+        // Get participants for this thread
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        $participants_query = "
+            SELECT p.user_id, u.display_name, u.user_email
+            FROM {$participants_table} p
+            LEFT JOIN {$wpdb->users} u ON p.user_id = u.ID
+            WHERE p.thread_id = %d
+        ";
+        $participants = $wpdb->get_results($wpdb->prepare($participants_query, $thread->id));
+        
+        $formatted_participants = array();
+        foreach ($participants as $participant) {
+            $formatted_participants[] = array(
+                'user_id' => (int) $participant->user_id,
+                'display_name' => $participant->display_name,
+                'email' => $participant->user_email
+            );
+        }
+        
         return array(
             'id' => (int) $thread->id,
             'type' => $thread->type,
@@ -1224,6 +1245,7 @@ class WPLCRestApiController {
             'created_by_email' => $thread->created_by_email ?? '',
             'created_at' => $thread->created_at,
             'updated_at' => $thread->updated_at,
+            'participants' => $formatted_participants,
             'last_message' => array(
                 'content' => $thread->last_message_content ?? '',
                 'created_at' => $thread->last_message_time ?? '',
