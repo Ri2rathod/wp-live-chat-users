@@ -1,4 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#5F7FFF"/>
-  <text x="32" y="44" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" text-anchor="middle">WP</text>
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5F7FFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A63CC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded background -->
+  <rect width="64" height="64" rx="14" fill="url(#grad)"/>
+  
+  <!-- Chat bubble icon -->
+  <path d="M 16 20 Q 16 16 20 16 L 44 16 Q 48 16 48 20 L 48 32 Q 48 36 44 36 L 28 36 L 20 42 L 20 36 Q 16 36 16 32 Z" 
+        fill="white" opacity="0.9"/>
+  
+  <!-- Chat dots inside bubble -->
+  <circle cx="26" cy="26" r="2" fill="#5F7FFF"/>
+  <circle cx="32" cy="26" r="2" fill="#5F7FFF"/>
+  <circle cx="38" cy="26" r="2" fill="#5F7FFF"/>
+  
+  <!-- "WPLCU" text at bottom -->
+  <text x="32" y="54" font-family="Arial, sans-serif" font-size="10" font-weight="bold" 
+        fill="white" text-anchor="middle" letter-spacing="0.5">WPLCU</text>
 </svg>
