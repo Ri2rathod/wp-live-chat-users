@@ -73,7 +73,7 @@ git commit -m "docs: update API documentation"`;
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1>🔧 Development</h1>
+        <h2 className="text-3xl font-bold">🔧 Development</h2>
         <p className="text-lg text-muted-foreground">
           Everything you need to know for contributing to and extending WP Live Chat Users.
         </p>

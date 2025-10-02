@@ -53,7 +53,7 @@ export function ArchitectureSection() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1>🏗️ Architecture</h1>
+        <h2 className="text-3xl font-bold">🏗️ Architecture</h2>
         <p className="text-lg text-muted-foreground">
           WP Live Chat Users follows a modern three-tier architecture designed for scalability, maintainability, and performance.
         </p>

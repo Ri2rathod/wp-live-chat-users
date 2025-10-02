@@ -66,7 +66,7 @@ add_filter('wplc_user_display_name', function($display_name, $user) {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1>🚀 Usage</h1>
+        <h2 className="text-3xl font-bold">🚀 Usage</h2>
         <p className="text-lg text-muted-foreground">
           Learn how to use WP Live Chat Users in your WordPress site, from basic implementation to advanced customization.
         </p>

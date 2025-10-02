@@ -124,7 +124,7 @@ SOCKET_PING_INTERVAL=25000`;
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1>📦 Installation</h1>
+        <h2 className="text-3xl font-bold">📦 Installation</h2>
         <p className="text-lg text-muted-foreground">
           Follow this step-by-step guide to install and configure WP Live Chat Users on your WordPress site.
         </p>

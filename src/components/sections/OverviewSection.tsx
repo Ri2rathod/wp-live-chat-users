@@ -15,9 +15,9 @@ export function OverviewSection() {
         </div>
         
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold">WP Live Chat Users</h1>
+          <h1 className="text-4xl font-bold">WP Live Chat Users - Real-Time WordPress Chat Plugin Documentation</h1>
           <p className="text-xl text-muted-foreground max-w-3xl">
-            A modern, real-time chat system for WordPress that enables user-to-user communication with a self-hosted WebSocket server. Built with React, TypeScript, and Socket.IO for optimal performance and user experience.
+            A modern, real-time chat system for WordPress that enables user-to-user communication with a self-hosted WebSocket server. Built with React, TypeScript, and Socket.IO for optimal performance and user experience. Complete guide for installation, usage, and development of live chat features for your WordPress site.
           </p>
         </div>
 
