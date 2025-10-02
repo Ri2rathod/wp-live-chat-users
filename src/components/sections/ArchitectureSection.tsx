@@ -4,7 +4,7 @@ import { CodeBlock } from '../CodeBlock';
 
 export function ArchitectureSection() {
   const architectureCode = `┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React Frontend │    │  Socket.IO Server │    │ WordPress Plugin │
+│   React Frontend│    │  Socket.IO Server│    │ WordPress Plugin│
 │                 │◄──►│                  │◄──►│                 │
 │  - TypeScript   │    │  - Node.js       │    │  - PHP Classes  │
 │  - Tailwind CSS │    │  - Express       │    │  - REST API     │
