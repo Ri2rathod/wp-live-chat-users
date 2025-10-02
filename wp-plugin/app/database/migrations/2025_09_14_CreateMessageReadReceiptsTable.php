@@ -16,11 +16,14 @@ class CreateMessageReadReceiptsTable extends WPLCAbstractMigration {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             message_id bigint(20) unsigned NOT NULL,
             user_id bigint(20) unsigned NOT NULL,
-            read_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            delivered_at datetime DEFAULT NULL,
+            read_at datetime DEFAULT NULL,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY idx_message_user (message_id, user_id),
             KEY idx_message_id (message_id),
             KEY idx_user_id (user_id),
+            KEY idx_delivered_at (delivered_at),
             KEY idx_read_at (read_at),
             FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}wplc_messages(id) ON DELETE CASCADE
         ) {$collation};";

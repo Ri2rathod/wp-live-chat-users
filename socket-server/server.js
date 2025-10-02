@@ -179,8 +179,8 @@ io.on("connection", (socket) => {
       // Clear typing status for this user
       clearTypingStatus(socket.userId, threadId);
 
-      // Broadcast message to all thread members
-      io.to(`thread_${threadId}`).emit("message", {
+      // Broadcast message to OTHER thread members (not the sender)
+      socket.to(`thread_${threadId}`).emit("message", {
         id: messageData.id,
         threadId,
         senderId: socket.userId,
@@ -245,8 +245,6 @@ io.on("connection", (socket) => {
    */
   socket.on("message_read", async ({ threadId, messageIds }) => {
     try {
-      console.log(`👁️ User ${socket.userId} read messages in thread ${threadId}:`, messageIds);
-
       // Store read receipts (integrate with your REST API)
       const readAt = new Date().toISOString();
       await markMessagesAsRead(socket.userId, threadId, messageIds);
@@ -267,6 +265,67 @@ io.on("connection", (socket) => {
         message: "Failed to mark messages as read" 
       });
     }
+  });
+
+  // ==========================================
+  // PRESENCE EVENTS
+  // ==========================================
+
+  /**
+   * Update user presence status
+   * Event: presence:update
+   * Payload: { user_id, status, last_seen }
+   */
+  socket.on("presence:update", (data) => {
+    const { status } = data;
+    const userId = socket.userId;
+
+    console.log(`👤 Presence update: User ${userId} is ${status}`);
+
+    // Update presence map
+    if (!userPresence.has(userId)) {
+      userPresence.set(userId, {
+        status,
+        lastSeen: new Date(),
+        socketIds: new Set([socket.id])
+      });
+    } else {
+      const presence = userPresence.get(userId);
+      presence.status = status;
+      presence.lastSeen = new Date();
+    }
+
+    // Broadcast presence to all connected clients (they can filter by relevance)
+    socket.broadcast.emit("presence:status", {
+      user_id: userId,
+      status,
+      last_seen: new Date().toISOString()
+    });
+  });
+
+  /**
+   * Request presence for specific users
+   * Event: presence:request
+   * Payload: { user_ids: [] }
+   */
+  socket.on("presence:request", (data) => {
+    const { user_ids = [] } = data;
+
+    console.log(`📋 Presence request for ${user_ids.length} users`);
+
+    // Send bulk presence update
+    const presences = user_ids
+      .filter(userId => userPresence.has(userId))
+      .map(userId => {
+        const presence = userPresence.get(userId);
+        return {
+          user_id: userId,
+          status: presence.status,
+          last_seen: presence.lastSeen.toISOString()
+        };
+      });
+
+    socket.emit("presence:bulk", presences);
   });
 
   // ==========================================
@@ -345,6 +404,18 @@ function handleUserDisconnection(socket) {
     // If no more connections, mark as offline
     if (presence.socketIds.size === 0) {
       presence.status = "offline";
+      
+      // Broadcast offline status to all connected clients
+      socket.broadcast.emit("presence:status", {
+        user_id: socket.userId,
+        status: "offline",
+        last_seen: presence.lastSeen.toISOString()
+      });
+      
+      // Also emit user:disconnect event
+      socket.broadcast.emit("user:disconnect", {
+        user_id: socket.userId
+      });
     }
   }
 
@@ -425,25 +496,36 @@ async function markMessagesAsRead(userId, threadId, messageIds) {
  */
 app.post("/webhook/message", async (req, res) => {
   try {
-    const { message, threadId, event } = req.body;
+    const { message, threadId, senderId, event } = req.body;
     
     if (!message || !threadId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    console.log(`📨 Webhook received: ${event || 'message_sent'} for thread ${threadId}`);
+    console.log(`📨 Webhook received: ${event || 'message_sent'} for thread ${threadId} from sender ${senderId}`);
 
-    // Broadcast the message to all users in the thread room (using same format as join_thread)
-    io.to(`thread_${threadId}`).emit("message:received", {
-      message,
-      threadId
-    });
-
-    // Update thread list for all participants
-    io.to(`thread_${threadId}`).emit("thread:updated", {
-      threadId,
-      lastMessage: message
-    });
+    // Get all sockets in the thread room
+    const room = io.sockets.adapter.rooms.get(`thread_${threadId}`);
+    
+    if (room) {
+      // Broadcast to all users EXCEPT the sender
+      room.forEach(socketId => {
+        const connection = activeConnections.get(socketId);
+        
+        // Only send to users who are NOT the sender
+        if (connection && connection.userId !== senderId) {
+          io.to(socketId).emit("message:received", {
+            message,
+            threadId
+          });
+          
+          io.to(socketId).emit("thread:updated", {
+            threadId,
+            lastMessage: message
+          });
+        }
+      });
+    }
 
     res.json({ success: true, broadcasted: true });
   } catch (error) {
@@ -476,6 +558,41 @@ app.post("/webhook/read-receipt", async (req, res) => {
     res.json({ success: true, broadcasted: true });
   } catch (error) {
     console.error("Read receipt webhook error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Webhook endpoint for new thread creation
+ */
+app.post("/webhook/thread-created", async (req, res) => {
+  try {
+    const { thread, participantIds } = req.body;
+    
+    if (!thread || !participantIds) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    console.log(`🆕 New thread created: ${thread.id} with participants:`, participantIds);
+
+    // Notify each participant about the new thread
+    participantIds.forEach(userId => {
+      // Find all sockets for this user
+      const userSockets = Array.from(activeConnections.entries())
+        .filter(([socketId, conn]) => conn.userId === userId)
+        .map(([socketId]) => socketId);
+
+      // Send notification to all user's connected devices
+      userSockets.forEach(socketId => {
+        io.to(socketId).emit("thread:created", {
+          thread
+        });
+      });
+    });
+
+    res.json({ success: true, notified: participantIds.length });
+  } catch (error) {
+    console.error("Thread created webhook error:", error);
     res.status(500).json({ error: error.message });
   }
 });

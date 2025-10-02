@@ -38,7 +38,6 @@ class WPLCMigrator {
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
             \WP_CLI::add_command( $command_name . ' migrate', WPLCMigrate::class );
-            \WP_CLI::add_command( 'scaffold wplc-migration', WPLCScaffold::class );
         }
     }
 

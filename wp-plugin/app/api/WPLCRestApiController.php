@@ -478,8 +478,17 @@ class WPLCRestApiController {
             $thread_id
         ));
 
+        $formatted_thread = $this->format_thread_response($thread);
+
+        // Notify all participants about the new thread via webhook
+        $this->send_socket_webhook('thread-created', array(
+            'thread' => $formatted_thread,
+            'participantIds' => $data['participants'],
+            'event' => 'thread_created'
+        ));
+
         return new WP_REST_Response(array(
-            'thread' => $this->format_thread_response($thread),
+            'thread' => $formatted_thread,
             'message' => __('Thread created successfully.', 'wp-live-chat-users')
         ), 201);
     }
@@ -693,11 +702,13 @@ class WPLCRestApiController {
         $thread_id = $request->get_param('thread_id');
         $before = $request->get_param('before');
         $limit = $request->get_param('limit');
+        $current_user_id = get_current_user_id();
 
         global $wpdb;
         
         $messages_table = $wpdb->prefix . 'wplc_messages';
         $attachments_table = $wpdb->prefix . 'wplc_message_attachments';
+        $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
         
         // Build query
         $where_clause = 'WHERE m.thread_id = %d';
@@ -740,10 +751,66 @@ class WPLCRestApiController {
             }
         }
 
+        // Get read receipts for all messages
+        $read_receipts = array();
+        if (!empty($messages)) {
+            $message_ids = array_column($messages, 'id');
+            $placeholders = implode(',', array_fill(0, count($message_ids), '%d'));
+            
+            $receipts = $wpdb->get_results($wpdb->prepare(
+                "SELECT message_id, user_id, delivered_at, read_at 
+                 FROM {$read_receipts_table} 
+                 WHERE message_id IN ({$placeholders})",
+                $message_ids
+            ));
+            
+            // Group receipts by message_id
+            foreach ($receipts as $receipt) {
+                if (!isset($read_receipts[$receipt->message_id])) {
+                    $read_receipts[$receipt->message_id] = array();
+                }
+                $read_receipts[$receipt->message_id][] = $receipt;
+            }
+        }
+
         // Format response
         $formatted_messages = array();
         foreach (array_reverse($messages) as $message) { // Reverse to show oldest first
-            $formatted_message = $this->format_message_response($message);
+            $formatted_message = $this->format_message_response($message, $current_user_id);
+            
+            // Calculate delivery and read status for sender's own messages
+            if ($message->sender_id == $current_user_id && isset($read_receipts[$message->id])) {
+                $receipts = $read_receipts[$message->id];
+                $all_delivered = true;
+                $all_read = true;
+                $any_delivered = false;
+                $any_read = false;
+                
+                foreach ($receipts as $receipt) {
+                    if ($receipt->delivered_at) {
+                        $any_delivered = true;
+                    } else {
+                        $all_delivered = false;
+                    }
+                    
+                    if ($receipt->read_at) {
+                        $any_read = true;
+                    } else {
+                        $all_read = false;
+                    }
+                }
+                
+                // Set status based on receipts
+                if ($all_read) {
+                    $formatted_message['status'] = 'read';
+                } elseif ($any_read || $all_delivered) {
+                    $formatted_message['status'] = 'delivered';
+                } elseif ($any_delivered) {
+                    $formatted_message['status'] = 'delivered';
+                } else {
+                    $formatted_message['status'] = 'sent';
+                }
+            }
             
             // Add attachments if any
             if (isset($attachments_by_message[$message->id])) {
@@ -865,6 +932,27 @@ class WPLCRestApiController {
             );
         }
 
+        // Create delivered receipts for all thread participants except sender
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
+        $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
+        
+        $participants = $wpdb->get_results($wpdb->prepare(
+            "SELECT user_id FROM {$participants_table} WHERE thread_id = %d AND user_id != %d",
+            $thread_id,
+            $sender_id
+        ));
+        
+        $current_time = current_time('mysql');
+        foreach ($participants as $participant) {
+            // Create a receipt with delivered_at timestamp (read_at will be null until they read it)
+            $wpdb->insert($read_receipts_table, array(
+                'message_id' => $message_id,
+                'user_id' => $participant->user_id,
+                'delivered_at' => $current_time,
+                'read_at' => null
+            ));
+        }
+
         // Fire action for real-time notifications
         do_action('wplc_message_sent', $message, $thread_id);
 
@@ -872,6 +960,7 @@ class WPLCRestApiController {
         $this->send_socket_webhook('message', array(
             'message' => $formatted_message,
             'threadId' => $thread_id,
+            'senderId' => $sender_id,
             'event' => 'message_sent'
         ));
 
@@ -1038,23 +1127,40 @@ class WPLCRestApiController {
         }
 
         $marked_count = 0;
+        $current_time = current_time('mysql');
+        
         foreach ($messages_to_mark as $msg_id) {
-            // Check if already marked as read
-            $existing = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM {$read_receipts_table} WHERE message_id = %d AND user_id = %d",
+            // Check if receipt already exists
+            $existing = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, delivered_at, read_at FROM {$read_receipts_table} WHERE message_id = %d AND user_id = %d",
                 $msg_id, $user_id
             ));
 
             if (!$existing) {
+                // Create new receipt with both delivered and read timestamps
                 $result = $wpdb->insert($read_receipts_table, array(
                     'message_id' => $msg_id,
                     'user_id' => $user_id,
-                    'read_at' => current_time('mysql')
+                    'delivered_at' => $current_time,
+                    'read_at' => $current_time
                 ));
 
                 if ($result) {
                     $marked_count++;
                 }
+            } elseif (!$existing->read_at) {
+                // Update existing receipt to mark as read (and delivered if not already)
+                $update_data = array('read_at' => $current_time);
+                if (!$existing->delivered_at) {
+                    $update_data['delivered_at'] = $current_time;
+                }
+                
+                $wpdb->update(
+                    $read_receipts_table,
+                    $update_data,
+                    array('id' => $existing->id)
+                );
+                $marked_count++;
             }
         }
 
@@ -1131,7 +1237,7 @@ class WPLCRestApiController {
     /**
      * Format message response
      */
-    private function format_message_response($message) {
+    private function format_message_response($message, $current_user_id = null) {
         return array(
             'id' => (int) $message->id,
             'thread_id' => (int) $message->thread_id,

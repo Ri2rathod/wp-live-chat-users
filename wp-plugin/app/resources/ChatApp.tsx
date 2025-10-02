@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff, X } from 'lucide-react';
+import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff, X, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,6 +46,9 @@ interface ChatItem {
   avatar: string | null;
   isBot: boolean;
   type: 'private' | 'group';
+  participantIds?: number[]; // For tracking presence
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 interface Message {
@@ -127,7 +130,11 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     users: false,
     messages: false
   });
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showNewMessageNotification, setShowNewMessageNotification] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const markedAsReadRef = useRef<Set<number>>(new Set()); // Track messages already marked as read
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef<boolean>(true);
 
   // Current user ID (get from WordPress API settings)
   const currentUserId = (window as any).wpApiSettings?.currentUser?.id || 1;
@@ -144,6 +151,16 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       return `${Math.floor(diffInMinutes / 1440)}d ago`;
     };
 
+    // Get participant IDs (exclude current user)
+    const participantIds = thread.participants
+      ?.map((p: any) => p.user_id || p.id)
+      .filter((id: number) => id !== currentUserId) || [];
+
+    // Check online status for the other participant (in private chats)
+    const otherUserId = participantIds[0];
+    const isOnline = otherUserId ? chatService.isUserOnline(otherUserId) : false;
+    const lastSeen = otherUserId ? chatService.getLastSeen(otherUserId) : undefined;
+
     return {
       id: thread.id,
       name: thread.title || `Thread ${thread.id}`,
@@ -152,9 +169,12 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       unread: thread.unread_count || 0,
       avatar: null,
       isBot: false,
-      type: thread.type
+      type: thread.type,
+      participantIds,
+      isOnline,
+      lastSeen
     };
-  }, []);
+  }, [currentUserId]);
 
   // Initialize chat service
   useEffect(() => {
@@ -210,20 +230,31 @@ const ChatApp: React.FC<ChatAppProps> = () => {
           },
 
           onMessageReceived: (message) => {
-            // Convert API message to local format
-            const convertedMessage: Message = {
-              id: message.id,
-              text: message.content,
-              sender: message.sender_id === currentUserId ? 'user' : 'other',
-              timestamp: new Date(message.created_at),
-              status: message.status as any,
-              isOptimistic: message.isOptimistic
-            };
+            // Skip if this message already exists (prevent duplicates from webhooks)
+            setMessages(prev => {
+              const threadMessages = prev[message.thread_id] || [];
+              const messageExists = threadMessages.some(m => m.id === message.id);
+              
+              if (messageExists) {
+                console.log('Message already exists, skipping:', message.id);
+                return prev;
+              }
 
-            setMessages(prev => ({
-              ...prev,
-              [message.thread_id]: [...(prev[message.thread_id] || []), convertedMessage]
-            }));
+              // Convert API message to local format
+              const convertedMessage: Message = {
+                id: message.id,
+                text: message.content,
+                sender: message.sender_id === currentUserId ? 'user' : 'other',
+                timestamp: new Date(message.created_at),
+                status: message.status as any,
+                isOptimistic: message.isOptimistic
+              };
+
+              return {
+                ...prev,
+                [message.thread_id]: [...threadMessages, convertedMessage]
+              };
+            });
 
             // Update chat list with latest message
             updateChatListWithMessage(message);
@@ -292,6 +323,37 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             });
           },
 
+          onUserPresenceChanged: (presence) => {
+            console.log('User presence changed:', presence);
+            // Update chat list with new presence info
+            setChatList(prev => prev.map(chat => {
+              if (chat.participantIds?.includes(presence.user_id)) {
+                return {
+                  ...chat,
+                  isOnline: presence.status === 'online',
+                  lastSeen: chatService.getLastSeen(presence.user_id)
+                };
+              }
+              return chat;
+            }));
+          },
+
+          onBulkPresenceUpdate: (presences) => {
+            console.log('Bulk presence update:', presences.size);
+            // Update all chats with presence info
+            setChatList(prev => prev.map(chat => {
+              const otherUserId = chat.participantIds?.[0];
+              if (otherUserId && presences.has(otherUserId)) {
+                return {
+                  ...chat,
+                  isOnline: chatService.isUserOnline(otherUserId),
+                  lastSeen: chatService.getLastSeen(otherUserId)
+                };
+              }
+              return chat;
+            }));
+          },
+
           onError: (error) => {
             console.error('Chat service error:', error);
             setIsLoading((prev) => ({ ...prev, chats: false, users: false, messages: false }));
@@ -340,15 +402,23 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       const threadMessages = messages[activeChat] || [];
       
       if (threadMessages.length > 0) {
-        // Get unread message IDs from other users
+        // Get unread message IDs from other users that haven't been marked yet
         const unreadMessageIds = threadMessages
-          .filter(msg => msg.sender !== 'user' && msg.status !== 'read')
+          .filter(msg => 
+            msg.sender !== 'user' && 
+            msg.status !== 'read' && 
+            !markedAsReadRef.current.has(msg.id as number)
+          )
           .map(msg => msg.id as number);
 
         if (unreadMessageIds.length > 0) {
           // Mark messages as read after a short delay (user has viewed them)
           const timer = setTimeout(() => {
             chatService.markMessagesRead(activeChat, unreadMessageIds);
+            
+            // Add to marked set to prevent re-marking
+            unreadMessageIds.forEach(id => markedAsReadRef.current.add(id));
+            
             console.log('Marked messages as read:', unreadMessageIds);
           }, 1000); // 1 second delay to ensure user is actually viewing
 
@@ -358,14 +428,63 @@ const ChatApp: React.FC<ChatAppProps> = () => {
     }
   }, [activeChat, messages, chatService]);
 
-  // Auto-scroll to bottom when messages change
-  const scrollToBottom = useCallback((): void => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Check if scroll is at bottom
+  const checkIfAtBottom = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100; // 100px threshold
+      isAtBottomRef.current = isAtBottom;
+      
+      // Hide notification if at bottom
+      if (isAtBottom) {
+        setShowNewMessageNotification(false);
+        setNewMessageCount(0);
+      }
+      
+      return isAtBottom;
+    }
+    return true;
   }, []);
 
+  // Scroll to bottom smoothly
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+      isAtBottomRef.current = true;
+      setShowNewMessageNotification(false);
+      setNewMessageCount(0);
+    }
+  }, []);
+
+  // Auto-scroll to bottom when messages change (only if already at bottom)
   useEffect(() => {
-    scrollToBottom();
+    const currentMessages = activeChat ? (messages[activeChat] || []) : [];
+    if (currentMessages.length > 0) {
+      if (isAtBottomRef.current) {
+        // User is at bottom, auto-scroll
+        scrollToBottom(true);
+      } else {
+        // User is scrolled up, show notification
+        const lastMessage = currentMessages[currentMessages.length - 1];
+        if (lastMessage.sender !== 'user') {
+          setShowNewMessageNotification(true);
+          setNewMessageCount(prev => prev + 1);
+        }
+      }
+    }
   }, [messages, activeChat, scrollToBottom]);
+
+  // Scroll to bottom when changing threads
+  useEffect(() => {
+    if (activeChat) {
+      scrollToBottom(false); // Instant scroll when switching chats
+      setShowNewMessageNotification(false);
+      setNewMessageCount(0);
+    }
+  }, [activeChat, scrollToBottom]);
 
   // Typing indicator timeout
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -446,6 +565,11 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
   const handleChatClick = (chatId: number): void => {
     setActiveChat(chatId);
+    
+    // Reset unread count for this chat
+    setChatList(prev => prev.map(chat => 
+      chat.id === chatId ? { ...chat, unread: 0 } : chat
+    ));
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -577,15 +701,21 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const updateChatListWithMessage = useCallback((message: any) => {
     setChatList(prev => prev.map(chat => {
       if (chat.id === message.thread_id) {
+        // Increment unread count if message is from another user and thread is not active
+        const shouldIncrementUnread = 
+          message.sender_id !== currentUserId && 
+          activeChat !== message.thread_id;
+        
         return {
           ...chat,
           lastMessage: message.content,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ago'
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ago',
+          unread: shouldIncrementUnread ? (chat.unread + 1) : chat.unread
         };
       }
       return chat;
     }));
-  }, []);
+  }, [currentUserId, activeChat]);
 
   const getAvatarFallback = (chat: ChatItem): string => {
     if (chat?.isBot) return '';
@@ -610,7 +740,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const currentMessages: Message[] = activeChat ? (messages[activeChat] || []) : [];
 
   return (
-    <div className="flex h-auto bg-gray-50">
+    <div className="flex h-[600px] bg-gray-50">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Sidebar Header */}
@@ -698,16 +828,22 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                       : 'hover:bg-gray-50'
                   }`}
                 >
-                  <Avatar className="h-12 w-12 mr-3">
-                    <AvatarImage src={chat.avatar || undefined} />
-                    <AvatarFallback>
-                      {chat.isBot ? (
-                        <Bot className="h-6 w-6" />
-                      ) : (
-                        getAvatarFallback(chat)
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative mr-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={chat.avatar || undefined} />
+                      <AvatarFallback>
+                        {chat.isBot ? (
+                          <Bot className="h-6 w-6" />
+                        ) : (
+                          getAvatarFallback(chat)
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    {/* Online status indicator */}
+                    {!chat.isBot && chat.isOnline && (
+                      <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-medium text-gray-900 truncate">
@@ -722,7 +858,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                         {chat.lastMessage}
                       </p>
                       {chat.unread > 0 && (
-                        <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 ml-2">
+                        <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 ml-2 flex-shrink-0">
                           {chat.unread}
                         </span>
                       )}
@@ -742,20 +878,30 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 p-4">
               <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={currentChat?.avatar || undefined} />
-                  <AvatarFallback>
-                    {currentChat?.isBot ? (
-                      <Bot className="h-5 w-5" />
-                    ) : (
-                      getAvatarFallback(currentChat!)
-                    )}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={currentChat?.avatar || undefined} />
+                    <AvatarFallback>
+                      {currentChat?.isBot ? (
+                        <Bot className="h-5 w-5" />
+                      ) : (
+                        getAvatarFallback(currentChat!)
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Online status indicator */}
+                  {!currentChat?.isBot && currentChat?.isOnline && (
+                    <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
+                  )}
+                </div>
                 <div>
                   <h3 className="font-medium text-gray-900">{currentChat?.name}</h3>
                   <p className="text-sm text-gray-500">
-                    {currentChat?.isBot ? 'AI Assistant' : 'Online'}
+                    {currentChat?.isBot 
+                      ? 'AI Assistant' 
+                      : currentChat?.isOnline 
+                        ? 'Online' 
+                        : currentChat?.lastSeen || 'Offline'}
                   </p>
                 </div>
               </div>
@@ -765,8 +911,13 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             {isLoading.messages ? (
               <MessageSkeleton />
             ) : (
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+              <div className="flex-1 overflow-hidden relative">
+                <div 
+                  ref={scrollContainerRef}
+                  className="h-full overflow-y-auto"
+                  onScroll={checkIfAtBottom}
+                >
+                  <div className="space-y-4 p-4">
                   {currentMessages.map((message) => (
                     <div
                       key={message.id}
@@ -797,12 +948,18 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                             {/* Message Status Indicator */}
                             {message.sender === 'user' && (
                               <div className="flex items-center justify-end mt-1">
-                                <span className="text-xs opacity-75">
-                                  {message.status === 'pending' && '⏳'}
-                                  {message.status === 'sent' && '✓'}
-                                  {message.status === 'delivered' && '✓✓'}
-                                  {message.status === 'read' && '✓✓'}
-                                </span>
+                                {message.status === 'pending' && (
+                                  <span className="text-xs opacity-75">⏳</span>
+                                )}
+                                {message.status === 'sent' && (
+                                  <span className="text-xs opacity-75">✓</span>
+                                )}
+                                {message.status === 'delivered' && (
+                                  <span className="text-xs opacity-75 text-gray-300">✓✓</span>
+                                )}
+                                {message.status === 'read' && (
+                                  <span className="text-xs opacity-90 text-blue-300">✓✓</span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -837,9 +994,25 @@ const ChatApp: React.FC<ChatAppProps> = () => {
                       </div>
                     </div>
                   ) : null}
-                  <div ref={messagesEndRef} />
+                    <div/>
+                  </div>
                 </div>
-              </ScrollArea>
+                
+                {/* New Message Notification */}
+                {showNewMessageNotification && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <button
+                      onClick={() => scrollToBottom(true)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 transition-all animate-bounce"
+                    >
+                      <span className="text-sm font-medium">
+                        {newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}
+                      </span>
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Message Input */}

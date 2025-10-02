@@ -1,5 +1,7 @@
 // ChatService.ts - WebSocket and REST API integration service
 import { io, Socket } from 'socket.io-client';
+import { presenceService } from './PresenceService';
+import type { UserPresence } from './PresenceService';
 
 // Type definitions for the chat service
 export interface ChatThread {
@@ -62,6 +64,8 @@ export interface ChatServiceEvents {
   onTypingStatusChanged: (typing: TypingStatus) => void;
   onPresenceChanged: (presence: PresenceStatus) => void;
   onReadReceiptReceived: (receipt: ReadReceipt) => void;
+  onUserPresenceChanged: (presence: UserPresence) => void;
+  onBulkPresenceUpdate: (presences: Map<number, UserPresence>) => void;
   onError: (error: any) => void;
   onConnectionStatusChanged: (connected: boolean) => void;
 }
@@ -94,6 +98,19 @@ class ChatService {
     
     try {
       await this.connectSocket();
+      
+      // Initialize presence service
+      if (this.socket) {
+        presenceService.initialize(this.socket, userId, {
+          onPresenceChanged: (presence) => {
+            this.events.onUserPresenceChanged?.(presence);
+          },
+          onBulkPresenceUpdate: (presences) => {
+            this.events.onBulkPresenceUpdate?.(presences);
+          }
+        });
+      }
+      
       // Load initial threads
       await this.loadThreads();
     } catch (error) {
@@ -106,6 +123,9 @@ class ChatService {
    * Cleanup and disconnect
    */
   public disconnect() {
+    // Disconnect presence service
+    presenceService.disconnect();
+    
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -171,6 +191,13 @@ class ChatService {
     // Message events
     this.socket.on('message', (data: any) => {
       console.log('📨 New message:', data);
+      
+      // Skip messages sent by current user (they have optimistic updates)
+      if (data.senderId === this.currentUserId) {
+        console.log('⏭️ Skipping own message from socket broadcast');
+        return;
+      }
+      
       // Convert socket data to ChatMessage format
       const message: ChatMessage = {
         id: data.id,
@@ -190,6 +217,13 @@ class ChatService {
     // Handle webhook-based messages
     this.socket.on('message:received', (data: any) => {
       console.log('📨 Message received (webhook):', data);
+      
+      // Skip messages sent by current user (they have optimistic updates)
+      if (data.message.sender_id === this.currentUserId) {
+        console.log('⏭️ Skipping own message from webhook');
+        return;
+      }
+      
       // Convert socket data to ChatMessage format
       const message: ChatMessage = {
         id: data.message.id,
@@ -278,6 +312,15 @@ class ChatService {
       console.log(`🔄 Thread updated:`, data);
       // Could trigger a thread list refresh here
       // this.loadThreads();
+    });
+
+    // New thread created event
+    this.socket.on('thread:created', (data: any) => {
+      console.log(`🆕 New thread created:`, data);
+      if (data.thread) {
+        // Reload threads to show the new one in the list
+        this.loadThreads();
+      }
     });
   }
 
@@ -546,6 +589,38 @@ class ChatService {
    */
   public clearPendingMessage(tempId: string) {
     this.pendingMessages.delete(tempId);
+  }
+
+  // ==========================================
+  // PRESENCE METHODS
+  // ==========================================
+
+  /**
+   * Get user presence status
+   */
+  public getUserPresence(userId: number): UserPresence | null {
+    return presenceService.getUserPresence(userId);
+  }
+
+  /**
+   * Check if user is online
+   */
+  public isUserOnline(userId: number): boolean {
+    return presenceService.isUserOnline(userId);
+  }
+
+  /**
+   * Get formatted last seen text
+   */
+  public getLastSeen(userId: number): string {
+    return presenceService.getLastSeenFormatted(userId);
+  }
+
+  /**
+   * Request presence for specific users
+   */
+  public requestPresence(userIds: number[]): void {
+    presenceService.requestPresence(userIds);
   }
 }
 

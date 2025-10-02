@@ -22,4 +22,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./app/resources"),
     },
   },
+  server: {
+    host: '192.168.193.212',
+    cors: true
+  }
 })
