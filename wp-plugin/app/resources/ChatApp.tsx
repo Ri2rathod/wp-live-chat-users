@@ -271,6 +271,27 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             });
           },
 
+          onReadReceiptReceived: (receipt) => {
+            console.log('Read receipt received:', receipt);
+            // Update message status to 'read'
+            setMessages(prev => {
+              const newMessages = { ...prev };
+              Object.keys(newMessages).forEach(threadId => {
+                const threadIdNum = parseInt(threadId);
+                if (!newMessages[threadIdNum]) {
+                  newMessages[threadIdNum] = [];
+                }
+                newMessages[threadIdNum] = newMessages[threadIdNum].map(msg => {
+                  if (msg.id === receipt.message_id) {
+                    return { ...msg, status: 'read' };
+                  }
+                  return msg;
+                });
+              });
+              return newMessages;
+            });
+          },
+
           onError: (error) => {
             console.error('Chat service error:', error);
             setIsLoading((prev) => ({ ...prev, chats: false, users: false, messages: false }));
@@ -312,6 +333,30 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       chatService.loadMessages(activeChat);
     }
   }, [activeChat]);
+
+  // Mark messages as read when viewing them
+  useEffect(() => {
+    if (activeChat && chatService.isConnected()) {
+      const threadMessages = messages[activeChat] || [];
+      
+      if (threadMessages.length > 0) {
+        // Get unread message IDs from other users
+        const unreadMessageIds = threadMessages
+          .filter(msg => msg.sender !== 'user' && msg.status !== 'read')
+          .map(msg => msg.id as number);
+
+        if (unreadMessageIds.length > 0) {
+          // Mark messages as read after a short delay (user has viewed them)
+          const timer = setTimeout(() => {
+            chatService.markMessagesRead(activeChat, unreadMessageIds);
+            console.log('Marked messages as read:', unreadMessageIds);
+          }, 1000); // 1 second delay to ensure user is actually viewing
+
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [activeChat, messages, chatService]);
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = useCallback((): void => {
@@ -565,7 +610,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const currentMessages: Message[] = activeChat ? (messages[activeChat] || []) : [];
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-auto bg-gray-50">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Sidebar Header */}

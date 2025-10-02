@@ -421,6 +421,66 @@ async function markMessagesAsRead(userId, threadId, messageIds) {
 // ==========================================
 
 /**
+ * Webhook endpoint for WordPress to notify about new messages
+ */
+app.post("/webhook/message", async (req, res) => {
+  try {
+    const { message, threadId, event } = req.body;
+    
+    if (!message || !threadId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    console.log(`📨 Webhook received: ${event || 'message_sent'} for thread ${threadId}`);
+
+    // Broadcast the message to all users in the thread room (using same format as join_thread)
+    io.to(`thread_${threadId}`).emit("message:received", {
+      message,
+      threadId
+    });
+
+    // Update thread list for all participants
+    io.to(`thread_${threadId}`).emit("thread:updated", {
+      threadId,
+      lastMessage: message
+    });
+
+    res.json({ success: true, broadcasted: true });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Webhook endpoint for read receipts
+ */
+app.post("/webhook/read-receipt", async (req, res) => {
+  try {
+    const { userId, threadId, messageIds } = req.body;
+    
+    if (!userId || !threadId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    console.log(`✓ Read receipt: User ${userId} read messages in thread ${threadId}`);
+
+    // Broadcast read receipt to thread participants (using same format as join_thread)
+    io.to(`thread_${threadId}`).emit("message:read", {
+      userId,
+      threadId,
+      messageIds: messageIds || [],
+      readAt: new Date().toISOString()
+    });
+
+    res.json({ success: true, broadcasted: true });
+  } catch (error) {
+    console.error("Read receipt webhook error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Health check endpoint
  */
 app.get("/health", (req, res) => {

@@ -174,6 +174,7 @@ class WordPressIntegration {
         method: 'POST',
         userId: senderId,
         body: JSON.stringify({
+          sender_id: senderId,
           content,
           content_type: contentType || 'text/plain',
           attachment_ids: attachments || []

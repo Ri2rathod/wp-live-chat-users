@@ -6,6 +6,7 @@ use WP_REST_Server;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use WPLCAPP\database\WPLCDatabaseManager;
 
 defined('ABSPATH') or die('Something went wrong');
 
@@ -240,6 +241,7 @@ class WPLCRestApiController {
         
         $threads_table = $wpdb->prefix . 'wplc_message_threads';
         $messages_table = $wpdb->prefix . 'wplc_messages';
+        $participants_table = $wpdb->prefix . 'wplc_message_participants';
         
         $page = $request->get_param('page');
         $per_page = $request->get_param('per_page');
@@ -255,6 +257,8 @@ class WPLCRestApiController {
         }
 
         // Get threads with last message
+        $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
+        
         $query = "
             SELECT 
                 t.*,
@@ -264,8 +268,19 @@ class WPLCRestApiController {
                 lm.created_at as last_message_time,
                 lm.sender_id as last_message_sender_id,
                 lmu.display_name as last_message_sender_name,
-                (SELECT COUNT(*) FROM {$messages_table} m2 WHERE m2.thread_id = t.id AND m2.status != 'read' AND m2.sender_id != %d) as unread_count
+                (
+                    SELECT COUNT(*) 
+                    FROM {$messages_table} m2 
+                    WHERE m2.thread_id = t.id 
+                    AND m2.sender_id != %d
+                    AND NOT EXISTS (
+                        SELECT 1 FROM {$read_receipts_table} rr 
+                        WHERE rr.message_id = m2.id 
+                        AND rr.user_id = %d
+                    )
+                ) as unread_count
             FROM {$threads_table} t
+            INNER JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
             LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
             LEFT JOIN (
                 SELECT m1.*
@@ -277,21 +292,22 @@ class WPLCRestApiController {
                 ) m2 ON m1.thread_id = m2.thread_id AND m1.created_at = m2.max_created_at
             ) lm ON t.id = lm.thread_id
             LEFT JOIN {$wpdb->users} lmu ON lm.sender_id = lmu.ID
-            WHERE (t.created_by = %d OR t.type = 'group')
+            WHERE 1=1
             {$search_sql}
             ORDER BY COALESCE(lm.created_at, t.created_at) DESC
             LIMIT %d OFFSET %d
         ";
 
-        $params = array_merge(array($user_id, $user_id), $search_params, array($per_page, $offset));
+        $params = array_merge(array($user_id, $user_id, $user_id), $search_params, array($per_page, $offset));
         $threads = $wpdb->get_results($wpdb->prepare($query, $params));
 
         // Get total count for pagination
         $count_query = "
             SELECT COUNT(DISTINCT t.id)
             FROM {$threads_table} t
+            INNER JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
             LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
-            WHERE (t.created_by = %d OR t.type = 'group')
+            WHERE 1=1
             {$search_sql}
         ";
         $count_params = array_merge(array($user_id), $search_params);
@@ -755,8 +771,21 @@ class WPLCRestApiController {
             return $user_id;
         }
 
+        // If using API key authentication, allow sender_id to be specified
+        $sender_id = $user_id;
+        if ($this->check_api_key_authentication($request)) {
+            $requested_sender_id = $request->get_param('sender_id');
+            if (!empty($requested_sender_id)) {
+                // Validate that the sender user exists
+                $sender_user = get_user_by('ID', $requested_sender_id);
+                if ($sender_user) {
+                    $sender_id = intval($requested_sender_id);
+                }
+            }
+        }
+
         // Check rate limiting
-        $rate_check = $this->check_rate_limit($user_id, 'message');
+        $rate_check = $this->check_rate_limit($sender_id, 'message');
         if (is_wp_error($rate_check)) {
             return $rate_check;
         }
@@ -780,7 +809,7 @@ class WPLCRestApiController {
         // Insert message
         $message_data = array(
             'thread_id' => $thread_id,
-            'sender_id' => $user_id,
+            'sender_id' => $sender_id,
             'content' => $content,
             'content_type' => $content_type,
             'status' => 'sent',
@@ -788,11 +817,7 @@ class WPLCRestApiController {
             'updated_at' => current_time('mysql')
         );
 
-        ob_start();
-        var_dump($message_data);
-        error_log(ob_get_clean());
         $result = $wpdb->insert($messages_table, $message_data);
-        
         if ($result === false) {
             return new WP_Error(
                 'message_send_failed',
@@ -842,6 +867,13 @@ class WPLCRestApiController {
 
         // Fire action for real-time notifications
         do_action('wplc_message_sent', $message, $thread_id);
+
+        // Send webhook to socket server for real-time updates
+        $this->send_socket_webhook('message', array(
+            'message' => $formatted_message,
+            'threadId' => $thread_id,
+            'event' => 'message_sent'
+        ));
 
         return new WP_REST_Response(array(
             'message' => $formatted_message,
@@ -1026,10 +1058,51 @@ class WPLCRestApiController {
             }
         }
 
+        // Send webhook to socket server for read receipts
+        if ($marked_count > 0) {
+            $this->send_socket_webhook('read-receipt', array(
+                'userId' => $user_id,
+                'threadId' => $thread_id,
+                'messageIds' => $messages_to_mark,
+                'event' => 'messages_read'
+            ));
+        }
+
         return new WP_REST_Response(array(
             'success' => true,
             'marked_count' => $marked_count
         ), 200);
+    }
+
+    /**
+     * Send webhook notification to socket server
+     */
+    private function send_socket_webhook($endpoint, $data) {
+        // Get socket server URL from settings
+        $socket_url = get_option('wplc_socket_server_url', 'http://localhost:3001');
+        
+        // Don't send if socket server is not configured
+        if (empty($socket_url) || $socket_url === 'http://localhost:3001') {
+            // Skip in development if not configured
+            return false;
+        }
+
+        $webhook_url = trailingslashit($socket_url) . 'webhook/' . $endpoint;
+
+        // Send async request (non-blocking)
+        $args = array(
+            'body' => json_encode($data),
+            'headers' => array(
+                'Content-Type' => 'application/json'
+            ),
+            'timeout' => 2, // Short timeout to avoid blocking
+            'blocking' => false, // Non-blocking request
+            'sslverify' => false // For local development
+        );
+
+        wp_remote_post($webhook_url, $args);
+        
+        return true;
     }
 
     /**
@@ -1533,7 +1606,8 @@ class WPLCRestApiController {
         }
 
         // Trigger migrations by running activation
-        do_action('wplc_run_migrations');
+
+        WPLCDatabaseManager::instance()->run_migrations();
 
         return new WP_REST_Response(array(
             'success' => true,
@@ -1550,6 +1624,7 @@ class WPLCRestApiController {
         }
 
         // Trigger rollback
+        WPLCDatabaseManager::instance()->rollback_migrations();
         do_action('wplc_rollback_migrations');
 
         return new WP_REST_Response(array(

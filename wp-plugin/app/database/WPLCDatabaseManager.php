@@ -39,9 +39,6 @@ class WPLCDatabaseManager {
         
         // Setup migrations table on plugin activation
         add_action('wp_loaded', array($this, 'setup_migrations_table'));
-        
-        // Run migrations on plugin activation
-        register_activation_hook(WP_LIVE_CHAT_USERS_DIR . '/wp-live-chat-users.php', array($this, 'run_migrations'));
     }
 
     /**

@@ -169,8 +169,40 @@ class ChatService {
     });
 
     // Message events
-    this.socket.on('message', (message: ChatMessage) => {
-      console.log('📨 New message:', message);
+    this.socket.on('message', (data: any) => {
+      console.log('📨 New message:', data);
+      // Convert socket data to ChatMessage format
+      const message: ChatMessage = {
+        id: data.id,
+        thread_id: data.threadId,
+        sender_id: data.senderId,
+        sender_name: data.senderName,
+        content: data.content,
+        content_type: data.contentType || 'text/plain',
+        status: data.status || 'sent',
+        created_at: data.createdAt,
+        updated_at: data.updatedAt,
+        attachments: data.attachments || []
+      };
+      this.events.onMessageReceived?.(message);
+    });
+
+    // Handle webhook-based messages
+    this.socket.on('message:received', (data: any) => {
+      console.log('📨 Message received (webhook):', data);
+      // Convert socket data to ChatMessage format
+      const message: ChatMessage = {
+        id: data.message.id,
+        thread_id: data.threadId,
+        sender_id: data.message.sender_id,
+        sender_name: data.message.sender_name,
+        content: data.message.content,
+        content_type: data.message.content_type || 'text/plain',
+        status: data.message.status || 'sent',
+        created_at: data.message.created_at,
+        updated_at: data.message.updated_at,
+        attachments: data.message.attachments || []
+      };
       this.events.onMessageReceived?.(message);
     });
 
@@ -194,9 +226,15 @@ class ChatService {
     });
 
     // Typing events
-    this.socket.on('typing', (data: TypingStatus) => {
+    this.socket.on('typing', (data: any) => {
       console.log(`⌨️ Typing status:`, data);
-      this.events.onTypingStatusChanged?.(data);
+      // Convert camelCase to snake_case for consistency
+      const typingStatus: TypingStatus = {
+        thread_id: data.threadId || data.thread_id,
+        user_id: data.userId || data.user_id,
+        is_typing: data.isTyping !== undefined ? data.isTyping : data.is_typing
+      };
+      this.events.onTypingStatusChanged?.(typingStatus);
     });
 
     // Presence events
@@ -211,6 +249,21 @@ class ChatService {
       this.events.onReadReceiptReceived?.(data);
     });
 
+    // Read receipts from webhook
+    this.socket.on('message:read', (data: any) => {
+      console.log(`👁️ Messages read (webhook):`, data);
+      // Could handle multiple message IDs
+      if (data.messageIds && data.messageIds.length > 0) {
+        data.messageIds.forEach((messageId: number) => {
+          this.events.onReadReceiptReceived?.({
+            message_id: messageId,
+            user_id: data.userId,
+            read_at: data.readAt
+          });
+        });
+      }
+    });
+
     // Thread events
     this.socket.on('thread_joined', ({ threadId }) => {
       console.log(`✅ Joined thread ${threadId}`);
@@ -218,6 +271,13 @@ class ChatService {
 
     this.socket.on('thread_left', ({ threadId }) => {
       console.log(`👋 Left thread ${threadId}`);
+    });
+
+    // Thread update events (from webhooks)
+    this.socket.on('thread:updated', (data: any) => {
+      console.log(`🔄 Thread updated:`, data);
+      // Could trigger a thread list refresh here
+      // this.loadThreads();
     });
   }
 
