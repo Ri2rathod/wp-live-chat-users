@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { OverviewSection } from './components/sections/OverviewSection';
 import { BuyMeCoffeeWidget } from './components/BuyMeCoffeeWidget';
@@ -445,43 +445,25 @@ function ContributingSection() {
 }
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState('overview');
-
-  const renderSection = () => {
-    switch (activeSection) {
-      case 'overview':
-        return <OverviewSection />;
-      case 'features':
-        return <FeaturesSection />;
-      case 'architecture':
-        return <ArchitectureSection />;
-      case 'installation':
-        return <InstallationSection />;
-      case 'usage':
-        return <UsageSection />;
-      case 'development':
-        return <DevelopmentSection />;
-      case 'api':
-        return <ApiSection />;
-      case 'security':
-        return <SecuritySection />;
-      case 'deployment':
-        return <DeploymentSection />;
-      case 'contributing':
-        return <ContributingSection />;
-      default:
-        return <OverviewSection />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <Navigation activeSection={activeSection} onSectionChange={setActiveSection} />
+      <Navigation />
       
       {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
         <div className="container mx-auto px-4 py-8 lg:px-8 max-w-5xl">
-          {renderSection()}
+          <Routes>
+            <Route path="/" element={<OverviewSection />} />
+            <Route path="/features" element={<FeaturesSection />} />
+            <Route path="/architecture" element={<ArchitectureSection />} />
+            <Route path="/installation" element={<InstallationSection />} />
+            <Route path="/usage" element={<UsageSection />} />
+            <Route path="/development" element={<DevelopmentSection />} />
+            <Route path="/api" element={<ApiSection />} />
+            <Route path="/security" element={<SecuritySection />} />
+            <Route path="/deployment" element={<DeploymentSection />} />
+            <Route path="/contributing" element={<ContributingSection />} />
+          </Routes>
           
           {/* Footer */}
           <footer className="mt-16 pt-8 border-t border-border">

@@ -1,36 +1,39 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ExternalLink, Github } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 
-interface NavigationProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
-}
-
 const navigationItems = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'features', label: 'Features' },
-  { id: 'architecture', label: 'Architecture' },
-  { id: 'installation', label: 'Installation' },
-  { id: 'usage', label: 'Usage' },
-  { id: 'development', label: 'Development' },
-  { id: 'api', label: 'API Reference' },
-  { id: 'security', label: 'Security' },
-  { id: 'deployment', label: 'Deployment' },
-  { id: 'contributing', label: 'Contributing' },
+  { id: 'overview', label: 'Overview', path: '/' },
+  { id: 'features', label: 'Features', path: '/features' },
+  { id: 'architecture', label: 'Architecture', path: '/architecture' },
+  { id: 'installation', label: 'Installation', path: '/installation' },
+  { id: 'usage', label: 'Usage', path: '/usage' },
+  { id: 'development', label: 'Development', path: '/development' },
+  { id: 'api', label: 'API Reference', path: '/api' },
+  { id: 'security', label: 'Security', path: '/security' },
+  { id: 'deployment', label: 'Deployment', path: '/deployment' },
+  { id: 'contributing', label: 'Contributing', path: '/contributing' },
 ];
 
-export function Navigation({ activeSection, onSectionChange }: NavigationProps) {
+export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleSectionClick = (sectionId: string) => {
-    onSectionChange(sectionId);
+  const handleMobileMenuClose = () => {
     setMobileMenuOpen(false);
+  };
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/' || location.pathname === '';
+    }
+    return location.pathname === path;
   };
 
   return (
@@ -52,17 +55,17 @@ export function Navigation({ activeSection, onSectionChange }: NavigationProps) 
           
           <nav className="space-y-2">
             {navigationItems.map((item) => (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => handleSectionClick(item.id)}
-                className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                  activeSection === item.id
+                to={item.path}
+                className={`block w-full text-left px-3 py-2 rounded-md transition-colors ${
+                  isActive(item.path)
                     ? 'bg-primary text-primary-foreground'
                     : 'hover:bg-accent hover:text-accent-foreground'
                 }`}
               >
                 {item.label}
-              </button>
+              </Link>
             ))}
           </nav>
 
@@ -110,17 +113,18 @@ export function Navigation({ activeSection, onSectionChange }: NavigationProps) 
             <div className="absolute top-16 left-0 right-0 bg-card border-b border-border shadow-lg">
               <nav className="p-4 space-y-2">
                 {navigationItems.map((item) => (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => handleSectionClick(item.id)}
-                    className={`w-full text-left px-3 py-3 rounded-md transition-colors ${
-                      activeSection === item.id
+                    to={item.path}
+                    onClick={handleMobileMenuClose}
+                    className={`block w-full text-left px-3 py-3 rounded-md transition-colors ${
+                      isActive(item.path)
                         ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-accent hover:text-accent-foreground'
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 ))}
                 <div className="pt-4 border-t border-border">
                   <Button variant="outline" size="sm" className="w-full justify-start" asChild>

@@ -51,9 +51,13 @@
       },
     },
     build: {
-      target: 'esnext',
+      target: 'es2015',
       outDir: 'docs',
-      copyPublicDir: true
+      copyPublicDir: true,
+      minify: 'terser',
+      terserOptions: {
+        ecma: 2015
+      }
     },
     server: {
       port: 3000,
