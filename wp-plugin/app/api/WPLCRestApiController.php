@@ -788,6 +788,9 @@ class WPLCRestApiController {
             'updated_at' => current_time('mysql')
         );
 
+        ob_start();
+        var_dump($message_data);
+        error_log(ob_get_clean());
         $result = $wpdb->insert($messages_table, $message_data);
         
         if ($result === false) {
@@ -1424,6 +1427,134 @@ class WPLCRestApiController {
             'message_id' => $message_id,
             'read_receipts' => $formatted_receipts,
             'read_count' => count($formatted_receipts)
+        ), 200);
+    }
+
+    /**
+     * Get admin settings
+     */
+    public function get_admin_settings(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to access settings.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        return new WP_REST_Response(array(
+            'socketUrl' => get_option('wplc_socket_server_url', 'http://localhost:3001'),
+            'typingIndicators' => get_option('wplc_enable_typing_indicators', '1') === '1',
+            'readReceipts' => get_option('wplc_enable_read_receipts', '1') === '1',
+            'presenceStatus' => get_option('wplc_enable_presence_status', '1') === '1',
+            'apiKey' => get_option('wplc_api_key', ''),
+            'apiEnabled' => get_option('wplc_api_enabled', false),
+            'apiUser' => get_option('wplc_api_user_id', '1')
+        ), 200);
+    }
+
+    /**
+     * Save admin settings
+     */
+    public function save_admin_settings(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to save settings.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        $data = $request->get_json_params();
+
+        update_option('wplc_socket_server_url', sanitize_url($data['socketUrl']));
+        update_option('wplc_enable_typing_indicators', $data['typingIndicators'] ? '1' : '0');
+        update_option('wplc_enable_read_receipts', $data['readReceipts'] ? '1' : '0');
+        update_option('wplc_enable_presence_status', $data['presenceStatus'] ? '1' : '0');
+        update_option('wplc_api_enabled', $data['apiEnabled']);
+        update_option('wplc_api_user_id', absint($data['apiUser']));
+
+        if (!empty($data['apiKey'])) {
+            update_option('wplc_api_key', sanitize_text_field($data['apiKey']));
+        }
+
+        return new WP_REST_Response(array(
+            'success' => true,
+            'message' => __('Settings saved successfully.', 'wp-live-chat-users')
+        ), 200);
+    }
+
+    /**
+     * Generate new API key
+     */
+    public function generate_api_key(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to generate API keys.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        $api_key = 'wplc_api_key_' . wp_generate_password(40, false, false);
+        update_option('wplc_api_key', $api_key);
+
+        return new WP_REST_Response(array(
+            'apiKey' => $api_key
+        ), 200);
+    }
+
+    /**
+     * Get migrations status
+     */
+    public function get_migrations_status(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to view migrations.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        global $wpdb;
+        $tables = array(
+            'wp_wplc_message_threads' => 'create_message_threads_table',
+            'wp_wplc_messages' => 'create_messages_table',
+            'wp_wplc_message_attachments' => 'create_attachments_table',
+            'wp_wplc_message_read_receipts' => 'create_read_receipts_table',
+            'wp_wplc_message_participants' => 'create_message_participants_table'
+        );
+
+        $migrations = array();
+        foreach ($tables as $table => $name) {
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
+            $migrations[] = array(
+                'plugin' => 'WP Live Chat Core',
+                'name' => $name,
+                'status' => $table_exists ? 'completed' : 'pending'
+            );
+        }
+
+        return new WP_REST_Response(array(
+            'migrations' => $migrations
+        ), 200);
+    }
+
+    /**
+     * Run migrations
+     */
+    public function run_migrations(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to run migrations.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        // Trigger migrations by running activation
+        do_action('wplc_run_migrations');
+
+        return new WP_REST_Response(array(
+            'success' => true,
+            'message' => __('Migrations completed successfully.', 'wp-live-chat-users')
+        ), 200);
+    }
+
+    /**
+     * Rollback migrations
+     */
+    public function rollback_migrations(WP_REST_Request $request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('rest_forbidden', __('You do not have permission to rollback migrations.', 'wp-live-chat-users'), array('status' => 403));
+        }
+
+        // Trigger rollback
+        do_action('wplc_rollback_migrations');
+
+        return new WP_REST_Response(array(
+            'success' => true,
+            'message' => __('Migrations rolled back successfully.', 'wp-live-chat-users')
         ), 200);
     }
 }

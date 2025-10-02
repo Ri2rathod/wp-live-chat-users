@@ -1,11 +1,31 @@
 {
+  "_index-BQz6EnQC.css": {
+    "file": "assets/index-BQz6EnQC.css",
+    "src": "_index-BQz6EnQC.css"
+  },
+  "_index-REq6wLk9.js": {
+    "file": "assets/index-REq6wLk9.js",
+    "name": "index",
+    "css": [
+      "assets/index-BQz6EnQC.css"
+    ]
+  },
+  "app/resources/main-admin.tsx": {
+    "file": "assets/main-admin-DuAfoxGP.js",
+    "name": "main-admin",
+    "src": "app/resources/main-admin.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-REq6wLk9.js"
+    ]
+  },
   "app/resources/main.tsx": {
-    "file": "assets/main-DTMBA0Nn.js",
+    "file": "assets/main-3Trf83El.js",
     "name": "main",
     "src": "app/resources/main.tsx",
     "isEntry": true,
-    "css": [
-      "assets/main-7Caf38Sy.css"
+    "imports": [
+      "_index-REq6wLk9.js"
     ]
   }
 }

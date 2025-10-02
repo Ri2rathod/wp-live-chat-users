@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff, MessageSquare, Users, X } from 'lucide-react';
+import { Send, User, Bot, Plus, Search, MoreVertical, Settings, LogOut, Wifi, WifiOff, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -168,7 +168,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       if (!currentUserId || currentUserId === 1) {
         console.warn('WordPress user not found, using fallback mode');
         setIsConnected(false);
-        setIsLoading({ ...isLoading, chats: false });
+        setIsLoading((prev) => ({ ...prev, chats: false }));
         return;
       }
 
@@ -184,7 +184,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
             // Convert API threads to chat items
             const chatItems = loadedThreads.map(convertThreadToChatItem);
             setChatList(chatItems);
-            setIsLoading({ ...isLoading, chats: false });
+            setIsLoading((prev) => ({ ...prev, chats: false }));
 
             // Set first thread as active if no active chat
             if (chatItems.length > 0 && !activeChat) {
@@ -193,7 +193,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
           },
 
           onMessagesLoaded: (threadId, loadedMessages) => {
-            setIsLoading({ ...isLoading, messages: false });
+            setIsLoading((prev) => ({ ...prev, messages: false }));
             // Convert API messages to local format
             const convertedMessages: Message[] = loadedMessages.map(msg => ({
               id: msg.id,
@@ -273,7 +273,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
           onError: (error) => {
             console.error('Chat service error:', error);
-            setIsLoading({ chats: false, users: false, messages: false });
+            setIsLoading((prev) => ({ ...prev, chats: false, users: false, messages: false }));
           }
         });
 
@@ -282,13 +282,13 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
         if (activeChat) {
           chatService.joinThread(activeChat);
-          setIsLoading({ ...isLoading, messages: true });
+          setIsLoading((prev) => ({ ...prev, messages: true }));
           await chatService.loadMessages(activeChat);
         }
 
       } catch (error) {
         console.error('Failed to initialize chat service:', error);
-        setIsLoading({ chats: false, users: false, messages: false });
+        setIsLoading((prev) => ({ ...prev, chats: false, users: false, messages: false }));
       }
     };
 
@@ -306,7 +306,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
       // Leave previous thread if any
       // Join new thread
       chatService.joinThread(activeChat);
-      setIsLoading({ ...isLoading, messages: true });
+      setIsLoading((prev) => ({ ...prev, messages: true }));
 
       // Load messages for this thread
       chatService.loadMessages(activeChat);
@@ -456,7 +456,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   // Load users from our custom chat API
   const loadUsers = useCallback(async () => {
     try {
-      setIsLoading({ ...isLoading, users: true });
+      setIsLoading((prev) => ({ ...prev, users: true }));
       
       // Build URL with query parameters
       const searchParams = new URLSearchParams({
@@ -472,10 +472,10 @@ const ChatApp: React.FC<ChatAppProps> = () => {
         avatar: user.avatar_url || user.avatar_urls?.['96'] || null
       })));
       
-      setIsLoading({ ...isLoading, users: false });
+      setIsLoading((prev) => ({ ...prev, users: false }));
     } catch (error) {
       console.error('Failed to load users:', error);
-      setIsLoading({ ...isLoading, users: false });
+      setIsLoading((prev) => ({ ...prev, users: false }));
     }
   }, [makeApiRequest, currentUserId]);
 
@@ -556,7 +556,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const filteredChats: ChatItem[] = chatList.filter(chat =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  
   const filteredUsers: User[] = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

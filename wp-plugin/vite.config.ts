@@ -12,6 +12,7 @@ export default defineConfig({
     v4wp({
       input: {
         main: 'app/resources/main.tsx',
+        'main-admin': 'app/resources/main-admin.tsx',
       },
       outDir: 'static',
     }),

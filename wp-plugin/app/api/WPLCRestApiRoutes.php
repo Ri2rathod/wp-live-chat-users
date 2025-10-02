@@ -369,5 +369,67 @@ class WPLCRestApiRoutes
                 )
             )
         ));
+
+        $this->register_admin_routes();
+    }
+
+    /**
+     * Register admin endpoints
+     */
+    private function register_admin_routes()
+    {
+        // Get admin settings
+        register_rest_route($this->namespace, '/admin/settings', array(
+            array(
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => array($this->controller, 'get_admin_settings'),
+                'permission_callback' => function () {
+                    return current_user_can('manage_options');
+                }
+            ),
+            array(
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => array($this->controller, 'save_admin_settings'),
+                'permission_callback' => function () {
+                    return current_user_can('manage_options');
+                }
+            )
+        ));
+
+        // Generate API key
+        register_rest_route($this->namespace, '/admin/api-key/generate', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array($this->controller, 'generate_api_key'),
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            }
+        ));
+
+        // Get migrations status
+        register_rest_route($this->namespace, '/admin/migrations', array(
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => array($this->controller, 'get_migrations_status'),
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            }
+        ));
+
+        // Run migrations
+        register_rest_route($this->namespace, '/admin/migrations/run', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array($this->controller, 'run_migrations'),
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            }
+        ));
+
+        // Rollback migrations
+        register_rest_route($this->namespace, '/admin/migrations/rollback', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array($this->controller, 'rollback_migrations'),
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            }
+        ));
     }
 }
