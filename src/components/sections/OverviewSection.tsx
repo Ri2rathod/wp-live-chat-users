@@ -15,7 +15,7 @@ export function OverviewSection() {
         </div>
         
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold">WP Live Chat Users - Real-Time WordPress Chat Plugin Documentation</h1>
+          <h1 className="text-4xl font-bold">Chatpulse - Real-Time WordPress Chat Plugin Documentation</h1>
           <p className="text-xl text-muted-foreground max-w-3xl">
             A modern, real-time chat system for WordPress that enables user-to-user communication with a self-hosted WebSocket server. Built with React, TypeScript, and Socket.IO for optimal performance and user experience. Complete guide for installation, usage, and development of live chat features for your WordPress site.
           </p>
@@ -29,7 +29,7 @@ export function OverviewSection() {
             </a>
           </Button>
           <Button variant="outline" asChild>
-            <a href="https://github.com/Ri2rathod/wp-live-chat-users" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Ri2rathod/chatpulse" target="_blank" rel="noopener noreferrer">
               <Star className="h-4 w-4 mr-2" />
               Star on GitHub
               <ExternalLink className="h-3 w-3 ml-2" />
@@ -40,7 +40,7 @@ export function OverviewSection() {
 
       {/* Key Benefits */}
       <div className="space-y-4">
-        <h2>Why Choose WP Live Chat Users?</h2>
+        <h2>Why Choose Chatpulse?</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-2">
             <h3 className="text-primary">🚀 Real-Time Performance</h3>

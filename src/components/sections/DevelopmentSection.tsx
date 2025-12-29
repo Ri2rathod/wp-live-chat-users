@@ -3,25 +3,25 @@ import { CodeBlock } from '../CodeBlock';
 import { Database, Terminal, GitBranch, TestTube } from 'lucide-react';
 
 export function DevelopmentSection() {
-  const schemaCode = `wp_wplc_message_threads    - Chat thread storage
-wp_wplc_messages           - Individual messages  
-wp_wplc_thread_participants - Thread membership (future)
-wp_wplc_message_reactions  - Message reactions (future)`;
+  const schemaCode = `wp_chatpulse_message_threads    - Chat thread storage
+wp_chatpulse_messages           - Individual messages  
+wp_chatpulse_thread_participants - Thread membership (future)
+wp_chatpulse_message_reactions  - Message reactions (future)`;
 
   const cliCommands = `# Run migrations
-wp wplc migrate:run
+wp chatpulse migrate:run
 
 # Rollback migrations  
-wp wplc migrate:rollback
+wp chatpulse migrate:rollback
 
 # Check migration status
-wp wplc migrate:status
+wp chatpulse migrate:status
 
 # Generate API key
-wp wplc api:generate-key
+wp chatpulse api:generate-key
 
 # Test API connection
-wp wplc api:test`;
+wp chatpulse api:test`;
 
   const devWorkflow = `# Start WordPress development
 cd wp-plugin/
@@ -75,7 +75,7 @@ git commit -m "docs: update API documentation"`;
       <div className="space-y-4">
         <h2 className="text-3xl font-bold">🔧 Development</h2>
         <p className="text-lg text-muted-foreground">
-          Everything you need to know for contributing to and extending WP Live Chat Users.
+          Everything you need to know for contributing to and extending Chatpulse.
         </p>
       </div>
 

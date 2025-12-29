@@ -102,12 +102,12 @@ The `404.html` file handles direct navigation to any route:
 ```html
 <script>
   sessionStorage.setItem('redirect', location.pathname);
-  location.replace('/wp-live-chat-users/');
+  location.replace('/chatpulse/');
 </script>
 ```
 
 This ensures that:
-1. User navigates to `/wp-live-chat-users/features`
+1. User navigates to `/chatpulse/features`
 2. GitHub Pages serves the static `features.html` file (if exists)
 3. OR redirects via `404.html` to index.html
 4. React Router then navigates to the correct route

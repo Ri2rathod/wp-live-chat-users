@@ -57,7 +57,7 @@ const navigationItems = [
 ### 4. **Updated main.tsx**
 - Imported `BrowserRouter` from React Router
 - Wrapped `<App />` with `<BrowserRouter>` component
-- Added `basename="/wp-live-chat-users"` to handle GitHub Pages base path
+- Added `basename="/chatpulse"` to handle GitHub Pages base path
 - Added GitHub Pages SPA redirect handling (for 404.html redirect)
 
 ### 5. **Created 404.html**
@@ -78,20 +78,20 @@ const navigationItems = [
 
 ## URLs
 
-- **Home/Overview**: `/wp-live-chat-users/`
-- **Features**: `/wp-live-chat-users/features`
-- **Architecture**: `/wp-live-chat-users/architecture`
-- **Installation**: `/wp-live-chat-users/installation`
-- **Usage**: `/wp-live-chat-users/usage`
-- **Development**: `/wp-live-chat-users/development`
-- **API Reference**: `/wp-live-chat-users/api`
-- **Security**: `/wp-live-chat-users/security`
-- **Deployment**: `/wp-live-chat-users/deployment`
-- **Contributing**: `/wp-live-chat-users/contributing`
+- **Home/Overview**: `/chatpulse/`
+- **Features**: `/chatpulse/features`
+- **Architecture**: `/chatpulse/architecture`
+- **Installation**: `/chatpulse/installation`
+- **Usage**: `/chatpulse/usage`
+- **Development**: `/chatpulse/development`
+- **API Reference**: `/chatpulse/api`
+- **Security**: `/chatpulse/security`
+- **Deployment**: `/chatpulse/deployment`
+- **Contributing**: `/chatpulse/contributing`
 
 ## Testing
 
-1. **Development**: `bun run dev` - Server at http://localhost:3000/wp-live-chat-users/
+1. **Development**: `bun run dev` - Server at http://localhost:3000/chatpulse/
 2. **Production Build**: `bun run build` - Generates static HTML with prerendering
 3. **Preview**: `bun run preview` - Test production build locally
 

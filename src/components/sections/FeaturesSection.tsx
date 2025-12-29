@@ -111,7 +111,7 @@ export function FeaturesSection() {
       <div className="space-y-4">
         <h2 className="text-3xl font-bold">✨ Features</h2>
         <p className="text-lg text-muted-foreground">
-          WP Live Chat Users comes packed with modern features designed to provide the best real-time communication experience for your WordPress site.
+          Chatpulse comes packed with modern features designed to provide the best real-time communication experience for your WordPress site.
         </p>
       </div>
 

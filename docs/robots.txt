@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://ri2rathod.github.io/wp-live-chat-users/sitemap.xml
+Sitemap: https://ri2rathod.github.io/chatpulse/sitemap.xml

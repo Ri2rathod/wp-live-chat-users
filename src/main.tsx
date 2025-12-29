@@ -14,7 +14,7 @@ if (redirect) {
 const rootElement = document.getElementById("root")!;
 
 const AppWithRouter = () => (
-  <BrowserRouter basename="/wp-live-chat-users">
+  <BrowserRouter basename="/chatpulse">
     <App />
   </BrowserRouter>
 );

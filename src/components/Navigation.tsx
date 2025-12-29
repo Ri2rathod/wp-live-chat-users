@@ -46,7 +46,7 @@ export function Navigation() {
               <span className="text-primary-foreground font-bold">WP</span>
             </div>
             <div>
-              <h2 className="font-semibold">WP Live Chat Users</h2>
+              <h2 className="font-semibold">Chatpulse</h2>
               <Badge variant="secondary" className="text-xs">
                 v1.0.0
               </Badge>
@@ -72,7 +72,7 @@ export function Navigation() {
           <div className="mt-8 pt-6 border-t border-border">
             <div className="space-y-2">
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <a href="https://github.com/Ri2rathod/wp-live-chat-users" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/Ri2rathod/chatpulse" target="_blank" rel="noopener noreferrer">
                   <Github className="h-4 w-4 mr-2" />
                   GitHub Repository
                   <ExternalLink className="h-3 w-3 ml-auto" />
@@ -99,7 +99,7 @@ export function Navigation() {
               <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">WP</span>
               </div>
-              <h1 className="font-semibold">WP Live Chat Users</h1>
+              <h1 className="font-semibold">Chatpulse</h1>
             </div>
             <Button variant="ghost" size="sm" onClick={toggleMobileMenu}>
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -128,7 +128,7 @@ export function Navigation() {
                 ))}
                 <div className="pt-4 border-t border-border">
                   <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                    <a href="https://github.com/Ri2rathod/wp-live-chat-users" target="_blank" rel="noopener noreferrer">
+                    <a href="https://github.com/Ri2rathod/chatpulse" target="_blank" rel="noopener noreferrer">
                       <Github className="h-4 w-4 mr-2" />
                       GitHub Repository
                       <ExternalLink className="h-3 w-3 ml-auto" />

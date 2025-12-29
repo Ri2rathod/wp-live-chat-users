@@ -27,7 +27,7 @@ async function prerender() {
   
   // Start a local server
   const app = express();
-  const BASE_PATH = '/wp-live-chat-users';
+  const BASE_PATH = '/chatpulse';
   const DOCS_DIR = path.join(__dirname, 'docs');
   
   // Serve static files

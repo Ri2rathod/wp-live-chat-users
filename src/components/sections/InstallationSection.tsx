@@ -11,14 +11,14 @@ MySQL/MariaDB    ✓ database
 Web server       ✓ (Apache/Nginx) with WebSocket support`;
 
   const pluginInstallCode = `# Clone the repository
-git clone https://github.com/Ri2rathod/wp-live-chat-users.git
-cd wp-live-chat-users
+git clone https://github.com/Ri2rathod/chatpulse.git
+cd chatpulse
 
 # Install plugin in WordPress
-cp -r wp-plugin/ /path/to/wordpress/wp-content/plugins/wp-live-chat-users/
+cp -r wp-plugin/ /path/to/wordpress/wp-content/plugins/chatpulse/
 
 # Install PHP dependencies
-cd /path/to/wordpress/wp-content/plugins/wp-live-chat-users/
+cd /path/to/wordpress/wp-content/plugins/chatpulse/
 composer install`;
 
   const frontendBuildCode = `# Navigate to plugin directory
@@ -62,7 +62,7 @@ npm run dev
 bun run dev`;
 
   const wpCliCode = `# Run database migrations
-wp wplc migrate:run --path=/path/to/wordpress
+wp chatpulse migrate:run --path=/path/to/wordpress
 
 # Configure API settings in WordPress admin:
 # Go to Settings > WPLC API
@@ -72,7 +72,7 @@ wp wplc migrate:run --path=/path/to/wordpress
 
   const envCode = `# WordPress Integration
 WP_BASE_URL=https://yoursite.com
-WP_API_NAMESPACE=wplc-chat/v1
+WP_API_NAMESPACE=chatpulse-chat/v1
 WP_API_KEY=your_generated_api_key_here
 WP_API_TIMEOUT=10000
 
@@ -126,7 +126,7 @@ SOCKET_PING_INTERVAL=25000`;
       <div className="space-y-4">
         <h2 className="text-3xl font-bold">📦 Installation</h2>
         <p className="text-lg text-muted-foreground">
-          Follow this step-by-step guide to install and configure WP Live Chat Users on your WordPress site.
+          Follow this step-by-step guide to install and configure Chatpulse on your WordPress site.
         </p>
       </div>
 
@@ -233,8 +233,8 @@ SOCKET_PING_INTERVAL=25000`;
         </p>
         <CodeBlock language="bash">
 {`# Quick local setup
-git clone https://github.com/Ri2rathod/wp-live-chat-users.git
-cd wp-live-chat-users
+git clone https://github.com/Ri2rathod/chatpulse.git
+cd chatpulse
 
 # Install all dependencies
 npm run install:all
