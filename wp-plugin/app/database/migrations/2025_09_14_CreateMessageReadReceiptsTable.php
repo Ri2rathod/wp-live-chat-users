@@ -39,7 +39,7 @@ class CreateMessageReadReceiptsTable extends WPLCAbstractMigration {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'wplc_message_read_receipts';
-        $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
+        $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
         error_log("[WPLC Migration] Successfully dropped wp_wplc_message_read_receipts table");
     }

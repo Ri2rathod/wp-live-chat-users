@@ -18,24 +18,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { chatService } from './ChatService';
+import { chatService, type ChatThread, type ChatParticipant } from './ChatService';
 
-// Type definitions
-interface ChatThread {
-  id: number;
-  type: 'private' | 'group';
-  title: string;
-  created_by: number;
-  created_at: string;
-  updated_at: string;
-  participants?: any[];
-  last_message?: {
-    content: string;
-    created_at: string;
-    sender_id: number;
-  };
-  unread_count?: number;
-}
+// Local ChatItem interface for UI state
 
 interface ChatItem {
   id: number;
@@ -224,9 +209,9 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
             // Request presence for all participants in threads
             const allParticipantIds = new Set<number>();
-            loadedThreads.forEach(thread => {
+            loadedThreads.forEach((thread: ChatThread) => {
               if (thread.participants) {
-                thread.participants.forEach(p => {
+                thread.participants.forEach((p: ChatParticipant) => {
                   if (p.user_id !== currentUserId) {
                     allParticipantIds.add(p.user_id);
                   }

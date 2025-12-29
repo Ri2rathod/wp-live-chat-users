@@ -1,31 +1,31 @@
 {
-  "_global-BJcMQS6K.css": {
-    "file": "assets/global-BJcMQS6K.css",
-    "src": "_global-BJcMQS6K.css"
+  "_global-C_-w4KYe.css": {
+    "file": "assets/global-C_-w4KYe.css",
+    "src": "_global-C_-w4KYe.css"
   },
-  "_global-CEdqqlO1.js": {
-    "file": "assets/global-CEdqqlO1.js",
+  "_global-rVe-WE_W.js": {
+    "file": "assets/global-rVe-WE_W.js",
     "name": "global",
     "css": [
-      "assets/global-BJcMQS6K.css"
+      "assets/global-C_-w4KYe.css"
     ]
   },
   "app/resources/main-admin.tsx": {
-    "file": "assets/main-admin-CK0cXBRK.js",
+    "file": "assets/main-admin-nnCHHcOF.js",
     "name": "main-admin",
     "src": "app/resources/main-admin.tsx",
     "isEntry": true,
     "imports": [
-      "_global-CEdqqlO1.js"
+      "_global-rVe-WE_W.js"
     ]
   },
   "app/resources/main.tsx": {
-    "file": "assets/main-BpLTj3GU.js",
+    "file": "assets/main-BtuFXXOE.js",
     "name": "main",
     "src": "app/resources/main.tsx",
     "isEntry": true,
     "imports": [
-      "_global-CEdqqlO1.js"
+      "_global-rVe-WE_W.js"
     ]
   }
 }

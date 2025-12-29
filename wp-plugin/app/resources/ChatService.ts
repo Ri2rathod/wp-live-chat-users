@@ -4,6 +4,14 @@ import { presenceService } from './PresenceService';
 import type { UserPresence } from './PresenceService';
 
 // Type definitions for the chat service
+export interface ChatParticipant {
+  id: number;
+  user_id: number;
+  display_name?: string;
+  name?: string;
+  avatar_url?: string;
+}
+
 export interface ChatThread {
   id: number;
   type: 'private' | 'group';
@@ -12,6 +20,7 @@ export interface ChatThread {
   created_by_name: string;
   created_at: string;
   updated_at: string;
+  participants?: ChatParticipant[];
   last_message: {
     content: string;
     created_at: string;

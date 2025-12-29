@@ -32,32 +32,9 @@ final class WPLCApp
             WPLCApiSettingsAdmin::instance()->init();
         }
 
-        add_action('init', [$this, 'load_text_domain']);
-
         // Register shortcodes
         $this->register_shortcodes();
     }
-    /**
-     * Load plugin text domain for translation
-     *
-     * @return void
-     */
-    public function load_text_domain()
-    {
-        // Load the plugin text domain properly
-        $domain = 'wp-live-chat-users';
-        $locale = determine_locale();
-        $mofile = $domain . '-' . $locale . '.mo';
-
-        // Try to load from the languages directory first
-        if (load_textdomain($domain, WP_LIVE_CHAT_USERS_DIR . '/languages/' . $mofile)) {
-            return;
-        }
-
-        // Otherwise use the standard WordPress approach
-        load_plugin_textdomain($domain, false, dirname(plugin_basename(WP_LIVE_CHAT_USERS_BASE_NAME)) . '/languages/');
-    }
-
     public function register_shortcodes()
     {
         // Initialize the shortcode manager

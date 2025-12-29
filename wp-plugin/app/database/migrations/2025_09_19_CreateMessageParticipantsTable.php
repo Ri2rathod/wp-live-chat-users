@@ -36,7 +36,7 @@ class CreateMessageParticipantsTable extends WPLCAbstractMigration {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'wplc_message_participants';
-        $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
+        $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
         error_log("[WPLC Migration] Successfully dropped wp_wplc_message_participants table");
     }

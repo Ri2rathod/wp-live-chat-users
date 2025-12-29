@@ -37,7 +37,6 @@ class CreateMessageAttachmentsTable extends WPLCAbstractMigration {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'wplc_message_attachments';
-        $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
-        error_log("[WPLC Migration] Successfully dropped wp_wplc_message_attachments table");
+        $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
     }
 }

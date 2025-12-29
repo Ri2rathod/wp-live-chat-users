@@ -51,7 +51,7 @@ class WPLCMigrator {
 
         $table = $wpdb->prefix . $this->table_name;
 
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '$table'" ) === $table ) {
+        if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table ) {
             return false;
         }
 
@@ -206,7 +206,7 @@ class WPLCMigrator {
     protected function get_migrations_to_run( $migration = null, $rollback = false ) {
         global $wpdb;
         $table = $wpdb->prefix . $this->table_name;
-        $ran_migrations = $wpdb->get_col( "SELECT name FROM $table");
+        $ran_migrations = $wpdb->get_col( $wpdb->prepare( "SELECT name FROM {$table}" ) );
 
         $migrations = $this->get_migrations( $ran_migrations, $migration, $rollback );
 
@@ -243,7 +243,9 @@ class WPLCMigrator {
             $fq_class_name = $this->get_class_with_namespace( $class_name );
             
             if ( false === $fq_class_name ) {
-                error_log( "[WPLCMigrator] Migration class not found: {$class_name} in file {$file} (Plugin: {$plugin})" );
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( "[WPLCMigrator] Migration class not found: {$class_name} in file {$file} (Plugin: {$plugin})" );
+                }
                 continue;
             }
 
@@ -252,7 +254,9 @@ class WPLCMigrator {
             $method    = $rollback ? 'rollback' : 'run';
             
             if ( ! method_exists( $migration_instance, $method ) ) {
-                error_log( "[WPLCMigrator] Method '{$method}' not found in migration class: {$class_name} ({$file}) (Plugin: {$plugin})" );
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( "[WPLCMigrator] Method '{$method}' not found in migration class: {$class_name} ({$file}) (Plugin: {$plugin})" );
+                }
                 continue;
             }
 
@@ -262,16 +266,22 @@ class WPLCMigrator {
 
                 if ( $rollback ) {
                     $wpdb->delete( $table, array( 'name' => $name ) );
-                    error_log( "[WPLCMigrator] Successfully rolled back migration: {$name} (Plugin: {$plugin})" );
+                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                        error_log( "[WPLCMigrator] Successfully rolled back migration: {$name} (Plugin: {$plugin})" );
+                    }
                 } else {
                     $wpdb->insert( $table, array( 
                         'name' => $name, 
-                        'date_ran' => date("Y-m-d H:i:s") 
+                        'date_ran' => current_time( 'mysql' ) 
                     ) );
-                    error_log( "[WPLCMigrator] Successfully ran migration: {$name} (Plugin: {$plugin})" );
+                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                        error_log( "[WPLCMigrator] Successfully ran migration: {$name} (Plugin: {$plugin})" );
+                    }
                 }
             } catch ( \Exception $e ) {
-                error_log( "[WPLCMigrator] Error running migration {$name} (Plugin: {$plugin}): " . $e->getMessage() );
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( "[WPLCMigrator] Error running migration {$name} (Plugin: {$plugin}): " . $e->getMessage() );
+                }
                 // Continue with other migrations even if one fails
                 continue;
             }
@@ -361,8 +371,13 @@ class WPLCMigrator {
 
         // Create migrations dir if it doesn't exist already.
         if ( ! is_dir( $target_path ) ) {
-            if ( ! mkdir( $target_path, 0755, true ) ) {
-                error_log( "[WPLCMigrator] Unable to create migrations folder {$target_path}" );
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+            global $wp_filesystem;
+            if ( ! $wp_filesystem->mkdir( $target_path, 0755 ) ) {
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( "[WPLCMigrator] Unable to create migrations folder {$target_path}" );
+                }
                 return new \WP_Error(
                     'migrations_folder_error',
                     "Unable to create migrations folder {$target_path}"
@@ -375,27 +390,33 @@ class WPLCMigrator {
         $stub      = file_get_contents( $stub_path );
 
         if ( ! $stub ) {
-            error_log( "[WPLCMigrator] Unable to read migration stub file: {$stub_path}" );
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( "[WPLCMigrator] Unable to read migration stub file: {$stub_path}" );
+            }
             return new \WP_Error(
                 'stub_file_error',
                 "Unable to create migration file: Couldn't read from stub {$stub_path}."
             );
         }
 
-        $date        = date( 'Y_m_d' );
+        $date        = gmdate( 'Y_m_d' );
         $filename    = "{$date}_{$migration_name}.php";
         $file_path   = "{$target_path}/{$filename}";
         $boilerplate = str_replace( '{{ class }}', $migration_name, $stub );
 
         if ( ! file_put_contents( $file_path, $boilerplate ) ) {
-            error_log( "[WPLCMigrator] Unable to create migration file: {$file_path}" );
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( "[WPLCMigrator] Unable to create migration file: {$file_path}" );
+            }
             return new \WP_Error(
                 'file_creation_error',
                 "Unable to create migration file {$file_path}."
             );
         }
 
-        error_log( "[WPLCMigrator] Successfully created migration file: {$file_path} (Plugin: {$plugin_key})" );
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( "[WPLCMigrator] Successfully created migration file: {$file_path} (Plugin: {$plugin_key})" );
+        }
         return $filename;
     }
 

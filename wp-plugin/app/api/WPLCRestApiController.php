@@ -10,7 +10,8 @@ use WPLCAPP\database\WPLCDatabaseManager;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCRestApiController {
+class WPLCRestApiController
+{
 
     /**
      * @var WPLCRestApiController
@@ -25,8 +26,9 @@ class WPLCRestApiController {
     /**
      * Get singleton instance
      */
-    public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WPLCRestApiController ) ) {
+    public static function instance()
+    {
+        if (!isset(self::$instance) && !(self::$instance instanceof WPLCRestApiController)) {
             self::$instance = new WPLCRestApiController();
         }
 
@@ -36,7 +38,8 @@ class WPLCRestApiController {
     /**
      * Initialize the REST API
      */
-    public function init() {
+    public function init()
+    {
         // Routes are now handled by WPLCRestApiRoutes
         WPLCRestApiRoutes::instance()->init();
     }
@@ -44,19 +47,20 @@ class WPLCRestApiController {
     /**
      * Check API key authentication for external access
      */
-    public function check_api_key_authentication(WP_REST_Request $request) {
+    public function check_api_key_authentication(WP_REST_Request $request)
+    {
         // Check if API access is enabled
         if (!get_option('wplc_api_enabled', false)) {
             return false;
         }
-        
+
         // Check for API key in header or query parameter
-        $api_key = $request->get_header('X-WPLC-API-Key') 
-                  ?? $request->get_param('api_key');
-        
+        $api_key = $request->get_header('X-WPLC-API-Key')
+            ?? $request->get_param('api_key');
+
         if (!empty($api_key)) {
             $valid_api_key = get_option('wplc_api_key', '');
-            
+
             if (!empty($valid_api_key) && hash_equals($valid_api_key, $api_key)) {
                 // Set a pseudo user for API access (use admin user or create a system user)
                 $api_user_id = get_option('wplc_api_user_id', 1); // Default to admin
@@ -64,19 +68,20 @@ class WPLCRestApiController {
                 return true;
             }
         }
-        
+
         return false;
     }
 
     /**
      * Check if user has basic permissions to access chat API
      */
-    public function check_user_permissions(WP_REST_Request $request) {
+    public function check_user_permissions(WP_REST_Request $request)
+    {
         // First try API key authentication
         if ($this->check_api_key_authentication($request)) {
             return true;
         }
-        
+
         // Fall back to regular user authentication
         if (!is_user_logged_in()) {
             return new WP_Error(
@@ -87,7 +92,7 @@ class WPLCRestApiController {
         }
 
         $current_user = wp_get_current_user();
-        
+
         // Check if user has capability to use chat
         if (!user_can($current_user, 'read')) {
             return new WP_Error(
@@ -99,7 +104,7 @@ class WPLCRestApiController {
 
         // Additional permission filters
         $has_permission = apply_filters('wplc_user_can_access_chat', true, $current_user, $request);
-        
+
         if (!$has_permission) {
             return new WP_Error(
                 'rest_chat_access_denied',
@@ -114,7 +119,8 @@ class WPLCRestApiController {
     /**
      * Check if user has permission to access specific thread
      */
-    public function check_thread_access_permissions(WP_REST_Request $request) {
+    public function check_thread_access_permissions(WP_REST_Request $request)
+    {
         // First check basic user permissions
         $basic_check = $this->check_user_permissions($request);
         if (is_wp_error($basic_check)) {
@@ -143,21 +149,28 @@ class WPLCRestApiController {
     /**
      * Check if user can access a specific thread
      */
-    private function user_can_access_thread($user_id, $thread_id) {
+    private function user_can_access_thread($user_id, $thread_id)
+    {
         global $wpdb;
 
         $thread_table = $wpdb->prefix . 'wplc_message_threads';
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
-        // Get thread info and check if user is a participant
-        $result = $wpdb->get_row($wpdb->prepare(
-            "SELECT t.*, p.role as participant_role 
+
+        $sql = $wpdb->prepare(
+            "
+            SELECT t.*, p.role AS participant_role
             FROM {$thread_table} t
-            LEFT JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
-            WHERE t.id = %d",
+            LEFT JOIN {$participants_table} p
+                ON t.id = p.thread_id
+                AND p.user_id = %d
+            WHERE t.id = %d
+            ",
             $user_id,
             $thread_id
-        ));
+        );
+
+        $result = $wpdb->get_row($sql);  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
+
 
         if (!$result) {
             return false;
@@ -168,21 +181,22 @@ class WPLCRestApiController {
             return true;
         }
 
-        return apply_filters('wplc_user_can_access_thread', false, $user_id, $thread_id, $result);
+        return false;
     }
 
     /**
      * Validate file upload
      */
-    public function validate_file_upload($param, $request, $key) {
+    public function validate_file_upload($param, $request, $key)
+    {
         $files = $request->get_file_params();
-        
+
         if (empty($files['file'])) {
             return false;
         }
 
         $file = $files['file'];
-        
+
         // Check file size (default 10MB)
         $max_size = apply_filters('wplc_max_file_size', 10 * 1024 * 1024);
         if ($file['size'] > $max_size) {
@@ -191,9 +205,17 @@ class WPLCRestApiController {
 
         // Check allowed file types
         $allowed_types = apply_filters('wplc_allowed_file_types', array(
-            'jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'pdf',
+            'doc',
+            'docx',
+            'txt',
+            'zip'
         ));
-        
+
         $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($file_extension, $allowed_types)) {
             return false;
@@ -205,7 +227,8 @@ class WPLCRestApiController {
     /**
      * Get current user ID or return error
      */
-    private function get_current_user_or_error() {
+    private function get_current_user_or_error()
+    {
         $user_id = get_current_user_id();
         if (!$user_id) {
             return new WP_Error(
@@ -220,7 +243,8 @@ class WPLCRestApiController {
     /**
      * Sanitize and validate thread data
      */
-    private function sanitize_thread_data($data) {
+    private function sanitize_thread_data($data)
+    {
         return array(
             'type' => sanitize_text_field($data['type']),
             'title' => isset($data['title']) ? sanitize_text_field($data['title']) : null,
@@ -231,22 +255,27 @@ class WPLCRestApiController {
     /**
      * Get threads for current user
      */
-    public function get_threads(WP_REST_Request $request) {
+    public function get_threads(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
         }
 
         global $wpdb;
-        
-        $threads_table = $wpdb->prefix . 'wplc_message_threads';
-        $messages_table = $wpdb->prefix . 'wplc_messages';
-        $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
-        $page = $request->get_param('page');
-        $per_page = $request->get_param('per_page');
-        $search = $request->get_param('search');
+
+        // Sanitize input parameters
+        $page = absint($request->get_param('page') ?: 1);
+        $per_page = absint($request->get_param('per_page') ?: 20);
+        $search = sanitize_text_field($request->get_param('search') ?: '');
         $offset = ($page - 1) * $per_page;
+
+        // Get escaped table names
+        $threads_table = esc_sql($wpdb->prefix . 'wplc_message_threads');
+        $messages_table = esc_sql($wpdb->prefix . 'wplc_messages');
+        $participants_table = esc_sql($wpdb->prefix . 'wplc_message_participants');
+        $read_receipts_table = esc_sql($wpdb->prefix . 'wplc_message_read_receipts');
+        $users_table = esc_sql($wpdb->users);
 
         // Build search query
         $search_sql = '';
@@ -256,11 +285,9 @@ class WPLCRestApiController {
             $search_params = array('%' . $wpdb->esc_like($search) . '%', '%' . $wpdb->esc_like($search) . '%');
         }
 
-        // Get threads with last message
-        $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
-        
-        $query = "
-            SELECT 
+        $params = array_merge(array($user_id, $user_id, $user_id), $search_params, array($per_page, $offset));
+
+        $base_query = "SELECT 
                 t.*,
                 u.display_name as created_by_name,
                 u.user_email as created_by_email,
@@ -270,48 +297,45 @@ class WPLCRestApiController {
                 lmu.display_name as last_message_sender_name,
                 (
                     SELECT COUNT(*) 
-                    FROM {$messages_table} m2 
+                    FROM `{$messages_table}` m2 
                     WHERE m2.thread_id = t.id 
                     AND m2.sender_id != %d
                     AND NOT EXISTS (
-                        SELECT 1 FROM {$read_receipts_table} rr 
+                        SELECT 1 FROM `{$read_receipts_table}` rr 
                         WHERE rr.message_id = m2.id 
                         AND rr.user_id = %d
                     )
                 ) as unread_count
-            FROM {$threads_table} t
-            INNER JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
-            LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
+            FROM `{$threads_table}` t
+            INNER JOIN `{$participants_table}` p ON t.id = p.thread_id AND p.user_id = %d
+            LEFT JOIN `{$users_table}` u ON t.created_by = u.ID
             LEFT JOIN (
                 SELECT m1.*
-                FROM {$messages_table} m1
+                FROM `{$messages_table}` m1
                 INNER JOIN (
                     SELECT thread_id, MAX(created_at) as max_created_at
-                    FROM {$messages_table}
+                    FROM `{$messages_table}`
                     GROUP BY thread_id
                 ) m2 ON m1.thread_id = m2.thread_id AND m1.created_at = m2.max_created_at
             ) lm ON t.id = lm.thread_id
-            LEFT JOIN {$wpdb->users} lmu ON lm.sender_id = lmu.ID
+            LEFT JOIN `{$users_table}` lmu ON lm.sender_id = lmu.ID
             WHERE 1=1
-            {$search_sql}
+            $search_sql
             ORDER BY COALESCE(lm.created_at, t.created_at) DESC
-            LIMIT %d OFFSET %d
-        ";
+            LIMIT %d OFFSET %d";
 
-        $params = array_merge(array($user_id, $user_id, $user_id), $search_params, array($per_page, $offset));
-        $threads = $wpdb->get_results($wpdb->prepare($query, $params));
+        $threads = $wpdb->get_results($wpdb->prepare($base_query, $params));  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
 
         // Get total count for pagination
-        $count_query = "
-            SELECT COUNT(DISTINCT t.id)
-            FROM {$threads_table} t
-            INNER JOIN {$participants_table} p ON t.id = p.thread_id AND p.user_id = %d
-            LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
-            WHERE 1=1
-            {$search_sql}
-        ";
         $count_params = array_merge(array($user_id), $search_params);
-        $total = $wpdb->get_var($wpdb->prepare($count_query, $count_params));
+        $base_count_query = "SELECT COUNT(DISTINCT t.id)
+            FROM `{$threads_table}` t
+            INNER JOIN `{$participants_table}` p ON t.id = p.thread_id AND p.user_id = %d
+            LEFT JOIN `{$users_table}` u ON t.created_by = u.ID
+            WHERE 1=1
+            $search_sql";
+
+        $total = $wpdb->get_var($wpdb->prepare($base_count_query, $count_params));   // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
 
         // Format response
         $formatted_threads = array();
@@ -333,16 +357,17 @@ class WPLCRestApiController {
     /**
      * Create a new thread
      */
-    public function create_thread(WP_REST_Request $request) {
+    public function create_thread(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
         }
 
         global $wpdb;
-        
+
         $data = $this->sanitize_thread_data($request->get_params());
-        
+
         // Validate participants array
         if (empty($data['participants']) || !is_array($data['participants'])) {
             return new WP_Error(
@@ -361,6 +386,7 @@ class WPLCRestApiController {
             if (!$participant || !user_can($participant_id, 'read')) {
                 return new WP_Error(
                     'invalid_participant',
+                    /* translators: %d: participant ID */
                     sprintf(__('Invalid participant ID: %d', 'wp-live-chat-users'), $participant_id),
                     array('status' => 400)
                 );
@@ -370,7 +396,7 @@ class WPLCRestApiController {
         // Validate based on thread type
         if ($data['type'] === 'private') {
             // Private chats must have exactly one other participant
-            if (count($data['participants'])  < 2) {
+            if (count($data['participants']) < 2) {
                 return new WP_Error(
                     'invalid_participants_count',
                     __('Private chats must have exactly one other participant.', 'wp-live-chat-users'),
@@ -398,8 +424,8 @@ class WPLCRestApiController {
             }
         }
 
-        $threads_table = $wpdb->prefix . 'wplc_message_threads';
-        
+        $threads_table = esc_sql($wpdb->prefix . 'wplc_message_threads');
+
         $insert_data = array(
             'type' => $data['type'],
             'title' => $data['title'],
@@ -409,7 +435,7 @@ class WPLCRestApiController {
         );
 
         $result = $wpdb->insert($threads_table, $insert_data);
-        
+
         if ($result === false) {
             return new WP_Error(
                 'thread_creation_failed',
@@ -419,10 +445,10 @@ class WPLCRestApiController {
         }
 
         $thread_id = $wpdb->insert_id;
-        
+
         // Add thread participants
-        $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+        $participants_table = esc_sql($wpdb->prefix . 'wplc_message_participants');
+
         // Add creator as owner
         $wpdb->insert($participants_table, array(
             'thread_id' => $thread_id,
@@ -430,7 +456,7 @@ class WPLCRestApiController {
             'role' => 'owner',
             'joined_at' => current_time('mysql')
         ));
-        
+
         // Add other participants
         foreach ($data['participants'] as $participant_id) {
             // Skip if this is the thread creator (already added as owner)
@@ -440,7 +466,7 @@ class WPLCRestApiController {
 
             // Check if participant is already added
             $exists = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+                "SELECT id FROM `{$participants_table}` WHERE thread_id = %d AND user_id = %d",
                 $thread_id,
                 $participant_id
             ));
@@ -460,20 +486,21 @@ class WPLCRestApiController {
                 // Clean up the thread and its participants if insertion fails
                 $wpdb->delete($participants_table, array('thread_id' => $thread_id));
                 $wpdb->delete($threads_table, array('id' => $thread_id));
-                
+
                 return new WP_Error(
                     'participant_creation_failed',
+                    /* translators: %d: participant ID */
                     sprintf(__('Failed to add participant: %d', 'wp-live-chat-users'), $participant_id),
                     array('status' => 500)
                 );
             }
         }
-        
+
         // Get the created thread with participants
         $thread = $wpdb->get_row($wpdb->prepare(
             "SELECT t.*, u.display_name as created_by_name, u.user_email as created_by_email 
-             FROM {$threads_table} t 
-             LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID 
+             FROM `{$threads_table}` t 
+             LEFT JOIN `{$wpdb->users}` u ON t.created_by = u.ID 
              WHERE t.id = %d",
             $thread_id
         ));
@@ -496,23 +523,25 @@ class WPLCRestApiController {
     /**
      * Get thread participants
      */
-    public function get_thread_participants(WP_REST_Request $request) {
+    public function get_thread_participants(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
-        
+
         global $wpdb;
-        $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+        $participants_table = esc_sql($wpdb->prefix . 'wplc_message_participants');
+        $users_table = esc_sql($wpdb->users);
+
         $participants = $wpdb->get_results($wpdb->prepare(
             "SELECT p.*, u.display_name, u.user_email 
-            FROM {$participants_table} p
-            LEFT JOIN {$wpdb->users} u ON p.user_id = u.ID
+            FROM `{$participants_table}` p
+            LEFT JOIN `{$users_table}` u ON p.user_id = u.ID
             WHERE p.thread_id = %d
             ORDER BY p.role = 'owner' DESC, p.role = 'admin' DESC, p.joined_at ASC",
             $thread_id
         ));
-        
+
         return new WP_REST_Response(array(
-            'participants' => array_map(function($participant) {
+            'participants' => array_map(function ($participant) {
                 return array(
                     'id' => $participant->user_id,
                     'name' => $participant->display_name,
@@ -527,11 +556,12 @@ class WPLCRestApiController {
     /**
      * Add participant to thread
      */
-    public function add_thread_participant(WP_REST_Request $request) {
+    public function add_thread_participant(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
         $user_id = $request->get_param('user_id');
         $role = $request->get_param('role') ?? 'member';
-        
+
         // Validate role
         if (!in_array($role, ['member', 'admin'])) {
             return new WP_Error(
@@ -540,17 +570,17 @@ class WPLCRestApiController {
                 array('status' => 400)
             );
         }
-        
+
         global $wpdb;
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+
         // Check if already a participant
         $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            "SELECT id FROM `{$participants_table}` WHERE thread_id = %d AND user_id = %d",
             $thread_id,
             $user_id
         ));
-        
+
         if ($existing) {
             return new WP_Error(
                 'already_participant',
@@ -558,7 +588,7 @@ class WPLCRestApiController {
                 array('status' => 400)
             );
         }
-        
+
         // Add participant
         $result = $wpdb->insert($participants_table, array(
             'thread_id' => $thread_id,
@@ -566,7 +596,7 @@ class WPLCRestApiController {
             'role' => $role,
             'joined_at' => current_time('mysql')
         ));
-        
+
         if ($result === false) {
             return new WP_Error(
                 'add_participant_failed',
@@ -574,7 +604,7 @@ class WPLCRestApiController {
                 array('status' => 500)
             );
         }
-        
+
         return new WP_REST_Response(array(
             'message' => __('Participant added successfully.', 'wp-live-chat-users')
         ), 201);
@@ -583,11 +613,12 @@ class WPLCRestApiController {
     /**
      * Update participant role
      */
-    public function update_participant_role(WP_REST_Request $request) {
+    public function update_participant_role(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
         $user_id = $request->get_param('user_id');
         $new_role = $request->get_param('role');
-        
+
         // Validate role
         if (!in_array($new_role, ['member', 'admin'])) {
             return new WP_Error(
@@ -596,17 +627,17 @@ class WPLCRestApiController {
                 array('status' => 400)
             );
         }
-        
+
         global $wpdb;
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+
         // Cannot modify owner role
         $participant = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            "SELECT * FROM `{$participants_table}` WHERE thread_id = %d AND user_id = %d",
             $thread_id,
             $user_id
         ));
-        
+
         if (!$participant) {
             return new WP_Error(
                 'participant_not_found',
@@ -614,7 +645,7 @@ class WPLCRestApiController {
                 array('status' => 404)
             );
         }
-        
+
         if ($participant->role === 'owner') {
             return new WP_Error(
                 'cannot_modify_owner',
@@ -622,14 +653,14 @@ class WPLCRestApiController {
                 array('status' => 400)
             );
         }
-        
+
         // Update role
         $result = $wpdb->update(
             $participants_table,
             array('role' => $new_role),
             array('thread_id' => $thread_id, 'user_id' => $user_id)
         );
-        
+
         if ($result === false) {
             return new WP_Error(
                 'update_role_failed',
@@ -637,7 +668,7 @@ class WPLCRestApiController {
                 array('status' => 500)
             );
         }
-        
+
         return new WP_REST_Response(array(
             'message' => __('Participant role updated successfully.', 'wp-live-chat-users')
         ), 200);
@@ -646,20 +677,21 @@ class WPLCRestApiController {
     /**
      * Remove participant from thread
      */
-    public function remove_thread_participant(WP_REST_Request $request) {
+    public function remove_thread_participant(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
         $user_id = $request->get_param('user_id');
-        
+
         global $wpdb;
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+
         // Cannot remove owner
         $participant = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$participants_table} WHERE thread_id = %d AND user_id = %d",
+            "SELECT * FROM `{$participants_table}` WHERE thread_id = %d AND user_id = %d",
             $thread_id,
             $user_id
         ));
-        
+
         if (!$participant) {
             return new WP_Error(
                 'participant_not_found',
@@ -667,7 +699,7 @@ class WPLCRestApiController {
                 array('status' => 404)
             );
         }
-        
+
         if ($participant->role === 'owner') {
             return new WP_Error(
                 'cannot_remove_owner',
@@ -675,13 +707,13 @@ class WPLCRestApiController {
                 array('status' => 400)
             );
         }
-        
+
         // Remove participant
         $result = $wpdb->delete(
             $participants_table,
             array('thread_id' => $thread_id, 'user_id' => $user_id)
         );
-        
+
         if ($result === false) {
             return new WP_Error(
                 'remove_participant_failed',
@@ -689,7 +721,7 @@ class WPLCRestApiController {
                 array('status' => 500)
             );
         }
-        
+
         return new WP_REST_Response(array(
             'message' => __('Participant removed successfully.', 'wp-live-chat-users')
         ), 200);
@@ -698,52 +730,48 @@ class WPLCRestApiController {
     /**
      * Get messages for a thread
      */
-    public function get_thread_messages(WP_REST_Request $request) {
+    public function get_thread_messages(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
         $before = $request->get_param('before');
         $limit = $request->get_param('limit');
         $current_user_id = get_current_user_id();
 
         global $wpdb;
-        
-        $messages_table = $wpdb->prefix . 'wplc_messages';
-        $attachments_table = $wpdb->prefix . 'wplc_message_attachments';
-        $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
-        
+
+        $messages_table = esc_sql($wpdb->prefix . 'wplc_messages');
+        $attachments_table = esc_sql($wpdb->prefix . 'wplc_message_attachments');
+        $read_receipts_table = esc_sql($wpdb->prefix . 'wplc_message_read_receipts');
+        $users_table = esc_sql($wpdb->users);
+
         // Build query
         $where_clause = 'WHERE m.thread_id = %d';
         $params = array($thread_id);
-        
+
         if (!empty($before)) {
             $where_clause .= ' AND m.created_at < %s';
             $params[] = $before;
         }
 
-        $query = "
-            SELECT 
+        $base_query = "SELECT 
                 m.*,
                 u.display_name as sender_name,
                 u.user_email as sender_email
-            FROM {$messages_table} m
-            LEFT JOIN {$wpdb->users} u ON m.sender_id = u.ID
-            {$where_clause}
+            FROM `{$messages_table}` m
+            LEFT JOIN `{$users_table}` u ON m.sender_id = u.ID
+            $where_clause
             ORDER BY m.created_at DESC
-            LIMIT %d
-        ";
-        
-        $params[] = $limit;
-        $messages = $wpdb->get_results($wpdb->prepare($query, $params));
+            LIMIT %d";
+
+        $messages = $wpdb->get_results($wpdb->prepare($base_query, array_merge($params, array($limit))));  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
 
         // Get attachments for messages
         if (!empty($messages)) {
             $message_ids = array_column($messages, 'id');
             $placeholders = implode(',', array_fill(0, count($message_ids), '%d'));
-            
-            $attachments = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$attachments_table} WHERE message_id IN ({$placeholders})",
-                $message_ids
-            ));
-            
+            $attachment_query = "SELECT * FROM `{$attachments_table}` WHERE message_id IN ($placeholders)";
+            $attachments = $wpdb->get_results($wpdb->prepare($attachment_query, ...$message_ids));  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
+
             // Group attachments by message_id
             $attachments_by_message = array();
             foreach ($attachments as $attachment) {
@@ -756,14 +784,11 @@ class WPLCRestApiController {
         if (!empty($messages)) {
             $message_ids = array_column($messages, 'id');
             $placeholders = implode(',', array_fill(0, count($message_ids), '%d'));
-            
-            $receipts = $wpdb->get_results($wpdb->prepare(
-                "SELECT message_id, user_id, delivered_at, read_at 
-                 FROM {$read_receipts_table} 
-                 WHERE message_id IN ({$placeholders})",
-                $message_ids
-            ));
-            
+            $receipts_query = "SELECT message_id, user_id, delivered_at, read_at 
+                 FROM `{$read_receipts_table}` 
+                 WHERE message_id IN ($placeholders)";
+            $receipts = $wpdb->get_results($wpdb->prepare($receipts_query, ...$message_ids));  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
+
             // Group receipts by message_id
             foreach ($receipts as $receipt) {
                 if (!isset($read_receipts[$receipt->message_id])) {
@@ -777,7 +802,7 @@ class WPLCRestApiController {
         $formatted_messages = array();
         foreach (array_reverse($messages) as $message) { // Reverse to show oldest first
             $formatted_message = $this->format_message_response($message, $current_user_id);
-            
+
             // Calculate delivery and read status for sender's own messages
             if ($message->sender_id == $current_user_id && isset($read_receipts[$message->id])) {
                 $receipts = $read_receipts[$message->id];
@@ -785,21 +810,21 @@ class WPLCRestApiController {
                 $all_read = true;
                 $any_delivered = false;
                 $any_read = false;
-                
+
                 foreach ($receipts as $receipt) {
                     if ($receipt->delivered_at) {
                         $any_delivered = true;
                     } else {
                         $all_delivered = false;
                     }
-                    
+
                     if ($receipt->read_at) {
                         $any_read = true;
                     } else {
                         $all_read = false;
                     }
                 }
-                
+
                 // Set status based on receipts
                 if ($all_read) {
                     $formatted_message['status'] = 'read';
@@ -811,7 +836,7 @@ class WPLCRestApiController {
                     $formatted_message['status'] = 'sent';
                 }
             }
-            
+
             // Add attachments if any
             if (isset($attachments_by_message[$message->id])) {
                 $formatted_message['attachments'] = array_map(
@@ -819,7 +844,7 @@ class WPLCRestApiController {
                     $attachments_by_message[$message->id]
                 );
             }
-            
+
             $formatted_messages[] = $formatted_message;
         }
 
@@ -832,7 +857,8 @@ class WPLCRestApiController {
     /**
      * Send a message to a thread
      */
-    public function send_message(WP_REST_Request $request) {
+    public function send_message(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
@@ -869,10 +895,10 @@ class WPLCRestApiController {
         }
 
         global $wpdb;
-        
-        $messages_table = $wpdb->prefix . 'wplc_messages';
-        $threads_table = $wpdb->prefix . 'wplc_message_threads';
-        
+
+        $messages_table = esc_sql($wpdb->prefix . 'wplc_messages');
+        $threads_table = esc_sql($wpdb->prefix . 'wplc_message_threads');
+
         // Insert message
         $message_data = array(
             'thread_id' => $thread_id,
@@ -910,8 +936,8 @@ class WPLCRestApiController {
         // Get the complete message
         $message = $wpdb->get_row($wpdb->prepare(
             "SELECT m.*, u.display_name as sender_name, u.user_email as sender_email 
-             FROM {$messages_table} m 
-             LEFT JOIN {$wpdb->users} u ON m.sender_id = u.ID 
+             FROM `$messages_table` m 
+             LEFT JOIN `{$wpdb->users}` u ON m.sender_id = u.ID 
              WHERE m.id = %d",
             $message_id
         ));
@@ -922,10 +948,10 @@ class WPLCRestApiController {
         if (!empty($attachment_ids)) {
             $attachments_table = $wpdb->prefix . 'wplc_message_attachments';
             $attachments = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$attachments_table} WHERE message_id = %d",
+                "SELECT * FROM `$attachments_table` WHERE message_id = %d",
                 $message_id
             ));
-            
+
             $formatted_message['attachments'] = array_map(
                 array($this, 'format_attachment_response'),
                 $attachments
@@ -935,13 +961,13 @@ class WPLCRestApiController {
         // Create delivered receipts for all thread participants except sender
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
         $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
-        
+
         $participants = $wpdb->get_results($wpdb->prepare(
-            "SELECT user_id FROM {$participants_table} WHERE thread_id = %d AND user_id != %d",
+            "SELECT user_id FROM `{$participants_table}` WHERE thread_id = %d AND user_id != %d",
             $thread_id,
             $sender_id
         ));
-        
+
         $current_time = current_time('mysql');
         foreach ($participants as $participant) {
             // Create a receipt with delivered_at timestamp (read_at will be null until they read it)
@@ -973,7 +999,8 @@ class WPLCRestApiController {
     /**
      * Upload file attachment
      */
-    public function upload_attachment(WP_REST_Request $request) {
+    public function upload_attachment(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
@@ -986,7 +1013,7 @@ class WPLCRestApiController {
         }
 
         $files = $request->get_file_params();
-        
+
         if (empty($files['file'])) {
             return new WP_Error(
                 'no_file',
@@ -1015,12 +1042,12 @@ class WPLCRestApiController {
         );
 
         $movefile = wp_handle_upload($files['file'], $upload_overrides);
-        
+
         if ($movefile && !isset($movefile['error'])) {
             // Store attachment info in database
             global $wpdb;
             $attachments_table = $wpdb->prefix . 'wplc_message_attachments';
-            
+
             $attachment_data = array(
                 'message_id' => 0, // Will be updated when attached to message
                 'file_path' => $movefile['file'],
@@ -1031,7 +1058,7 @@ class WPLCRestApiController {
             );
 
             $result = $wpdb->insert($attachments_table, $attachment_data);
-            
+
             if ($result === false) {
                 // Clean up uploaded file
                 wp_delete_file($movefile['file']);
@@ -1043,7 +1070,7 @@ class WPLCRestApiController {
             }
 
             $attachment_id = $wpdb->insert_id;
-            
+
             return new WP_REST_Response(array(
                 'attachment_id' => $attachment_id,
                 'url' => $movefile['url'],
@@ -1051,7 +1078,7 @@ class WPLCRestApiController {
                 'size' => $attachment_data['file_size'],
                 'mime_type' => $attachment_data['mime_type']
             ), 201);
-            
+
         } else {
             return new WP_Error(
                 'upload_failed',
@@ -1064,7 +1091,8 @@ class WPLCRestApiController {
     /**
      * Handle typing indicator
      */
-    public function handle_typing_indicator(WP_REST_Request $request) {
+    public function handle_typing_indicator(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
@@ -1081,7 +1109,7 @@ class WPLCRestApiController {
 
         // Store typing status in transient (expires in 10 seconds)
         $transient_key = "wplc_typing_{$thread_id}_{$user_id}";
-        
+
         if ($is_typing) {
             set_transient($transient_key, true, 10);
         } else {
@@ -1101,7 +1129,8 @@ class WPLCRestApiController {
     /**
      * Mark messages as read
      */
-    public function mark_messages_read(WP_REST_Request $request) {
+    public function mark_messages_read(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
@@ -1111,7 +1140,7 @@ class WPLCRestApiController {
         $message_id = $request->get_param('message_id');
 
         global $wpdb;
-        
+
         $messages_table = $wpdb->prefix . 'wplc_messages';
         $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
 
@@ -1121,19 +1150,21 @@ class WPLCRestApiController {
             $messages_to_mark = array($message_id);
         } else {
             $messages_to_mark = $wpdb->get_col($wpdb->prepare(
-                "SELECT id FROM {$messages_table} WHERE thread_id = %d AND sender_id != %d",
-                $thread_id, $user_id
+                "SELECT id FROM `{$messages_table}` WHERE thread_id = %d AND sender_id != %d",
+                $thread_id,
+                $user_id
             ));
         }
 
         $marked_count = 0;
         $current_time = current_time('mysql');
-        
+
         foreach ($messages_to_mark as $msg_id) {
             // Check if receipt already exists
             $existing = $wpdb->get_row($wpdb->prepare(
-                "SELECT id, delivered_at, read_at FROM {$read_receipts_table} WHERE message_id = %d AND user_id = %d",
-                $msg_id, $user_id
+                "SELECT id, delivered_at, read_at FROM `{$read_receipts_table}` WHERE message_id = %d AND user_id = %d",
+                $msg_id,
+                $user_id
             ));
 
             if (!$existing) {
@@ -1154,7 +1185,7 @@ class WPLCRestApiController {
                 if (!$existing->delivered_at) {
                     $update_data['delivered_at'] = $current_time;
                 }
-                
+
                 $wpdb->update(
                     $read_receipts_table,
                     $update_data,
@@ -1183,10 +1214,11 @@ class WPLCRestApiController {
     /**
      * Send webhook notification to socket server
      */
-    private function send_socket_webhook($endpoint, $data) {
+    private function send_socket_webhook($endpoint, $data)
+    {
         // Get socket server URL from settings
         $socket_url = get_option('wplc_socket_server_url', 'http://localhost:3001');
-        
+
         // Don't send if socket server is not configured
         if (empty($socket_url) || $socket_url === 'http://localhost:3001') {
             // Skip in development if not configured
@@ -1207,26 +1239,25 @@ class WPLCRestApiController {
         );
 
         wp_remote_post($webhook_url, $args);
-        
+
         return true;
     }
 
     /**
      * Format thread response
      */
-    private function format_thread_response($thread) {
+    private function format_thread_response($thread)
+    {
         global $wpdb;
-        
+
         // Get participants for this thread
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        $participants_query = "
-            SELECT p.user_id, u.display_name, u.user_email
-            FROM {$participants_table} p
-            LEFT JOIN {$wpdb->users} u ON p.user_id = u.ID
-            WHERE p.thread_id = %d
-        ";
-        $participants = $wpdb->get_results($wpdb->prepare($participants_query, $thread->id));
-        
+        $participants_query = "SELECT p.user_id, u.display_name, u.user_email
+            FROM `{$participants_table}` p
+            LEFT JOIN `{$wpdb->users}` u ON p.user_id = u.ID
+            WHERE p.thread_id = %d";
+        $participants = $wpdb->get_results($wpdb->prepare($participants_query, $thread->id));  // phpcs:ignore  WordPress.DB.PreparedSQL.NotPrepared 
+
         $formatted_participants = array();
         foreach ($participants as $participant) {
             $formatted_participants[] = array(
@@ -1235,7 +1266,7 @@ class WPLCRestApiController {
                 'email' => $participant->user_email
             );
         }
-        
+
         return array(
             'id' => (int) $thread->id,
             'type' => $thread->type,
@@ -1259,7 +1290,8 @@ class WPLCRestApiController {
     /**
      * Format message response
      */
-    private function format_message_response($message, $current_user_id = null) {
+    private function format_message_response($message, $current_user_id = null)
+    {
         return array(
             'id' => (int) $message->id,
             'thread_id' => (int) $message->thread_id,
@@ -1278,10 +1310,11 @@ class WPLCRestApiController {
     /**
      * Format attachment response
      */
-    private function format_attachment_response($attachment) {
+    private function format_attachment_response($attachment)
+    {
         $upload_dir = wp_upload_dir();
         $file_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $attachment->file_path);
-        
+
         return array(
             'id' => (int) $attachment->id,
             'filename' => $attachment->original_name,
@@ -1295,7 +1328,8 @@ class WPLCRestApiController {
     /**
      * Get users that can participate in chat
      */
-    public function get_users(WP_REST_Request $request) {
+    public function get_users(WP_REST_Request $request)
+    {
         // Get the current user
         $current_user = wp_get_current_user();
         if (!$current_user || !$current_user->ID) {
@@ -1370,7 +1404,7 @@ class WPLCRestApiController {
 
             // Allow plugins to modify user data
             $user_data = apply_filters('wplc_user_response_data', $user_data, $user);
-            
+
             $formatted_users[] = $user_data;
         }
 
@@ -1380,7 +1414,8 @@ class WPLCRestApiController {
     /**
      * Check if a user is currently online
      */
-    private function is_user_online($user_id) {
+    private function is_user_online($user_id)
+    {
         $last_active = get_user_meta($user_id, 'last_active', true);
         if (empty($last_active)) {
             return false;
@@ -1394,26 +1429,27 @@ class WPLCRestApiController {
     /**
      * Find existing private thread between two users
      */
-    private function find_private_thread($user1_id, $user2_id) {
+    private function find_private_thread($user1_id, $user2_id)
+    {
         global $wpdb;
-        
+
         $threads_table = $wpdb->prefix . 'wplc_message_threads';
         $participants_table = $wpdb->prefix . 'wplc_message_participants';
-        
+
         // Find threads where exactly these two users are participants
-        $query = $wpdb->prepare(
+        return $wpdb->get_row($wpdb->prepare(
             "SELECT t.*, u.display_name as created_by_name, u.user_email as created_by_email 
-            FROM {$threads_table} t
-            INNER JOIN {$participants_table} p1 ON t.id = p1.thread_id
-            INNER JOIN {$participants_table} p2 ON t.id = p2.thread_id
-            LEFT JOIN {$wpdb->users} u ON t.created_by = u.ID
+            FROM `{$threads_table}` t
+            INNER JOIN `{$participants_table}` p1 ON t.id = p1.thread_id
+            INNER JOIN `{$participants_table}` p2 ON t.id = p2.thread_id
+            LEFT JOIN `{$wpdb->users}` u ON t.created_by = u.ID
             WHERE t.type = 'private'
             AND (
                 (p1.user_id = %d AND p2.user_id = %d)
             )
             AND NOT EXISTS (
                 SELECT 1 
-                FROM {$participants_table} p3 
+                FROM `{$participants_table}` p3 
                 WHERE p3.thread_id = t.id 
                 AND p3.user_id NOT IN (%d, %d)
             )
@@ -1422,20 +1458,19 @@ class WPLCRestApiController {
             $user2_id,
             $user1_id,
             $user2_id
-        );
-        
-        return $wpdb->get_row($query);
-         
+        ));
+
     }
 
     /**
      * Attach files to message
      */
-    private function attach_files_to_message($message_id, $attachment_ids) {
+    private function attach_files_to_message($message_id, $attachment_ids)
+    {
         global $wpdb;
-        
+
         $attachments_table = $wpdb->prefix . 'wplc_message_attachments';
-        
+
         foreach ($attachment_ids as $attachment_id) {
             $wpdb->update(
                 $attachments_table,
@@ -1450,18 +1485,19 @@ class WPLCRestApiController {
     /**
      * Get typing status for thread
      */
-    public function get_typing_status($thread_id) {
+    public function get_typing_status($thread_id)
+    {
         global $wpdb;
-        
+
         $typing_users = array();
-        
+
         // Get all transients for this thread
         $transient_prefix = "wplc_typing_{$thread_id}_";
         $transients = $wpdb->get_results($wpdb->prepare(
-            "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+            "SELECT option_name FROM `{$wpdb->options}` WHERE option_name LIKE %s",
             '_transient_' . $transient_prefix . '%'
         ));
-        
+
         foreach ($transients as $transient) {
             $user_id = str_replace('_transient_' . $transient_prefix, '', $transient->option_name);
             if (is_numeric($user_id)) {
@@ -1474,14 +1510,15 @@ class WPLCRestApiController {
                 }
             }
         }
-        
+
         return $typing_users;
     }
 
     /**
      * Validate message content
      */
-    private function validate_message_content($content, $content_type) {
+    private function validate_message_content($content, $content_type)
+    {
         if (empty(trim($content))) {
             return new WP_Error(
                 'empty_content',
@@ -1495,6 +1532,7 @@ class WPLCRestApiController {
         if (strlen($content) > $max_length) {
             return new WP_Error(
                 'content_too_long',
+                /* translators: %d: maximum number of characters */
                 sprintf(__('Message content cannot exceed %d characters.', 'wp-live-chat-users'), $max_length),
                 array('status' => 400)
             );
@@ -1518,36 +1556,42 @@ class WPLCRestApiController {
     /**
      * Check rate limiting
      */
-    private function check_rate_limit($user_id, $action = 'message') {
+    private function check_rate_limit($user_id, $action = 'message')
+    {
         $limit_key = "wplc_rate_limit_{$action}_{$user_id}";
         $current_count = get_transient($limit_key);
-        
+
         $limits = apply_filters('wplc_rate_limits', array(
             'message' => array('count' => 60, 'period' => 60), // 60 messages per minute
             'upload' => array('count' => 10, 'period' => 60),  // 10 uploads per minute
             'typing' => array('count' => 30, 'period' => 60)   // 30 typing updates per minute
         ));
-        
+
         if (!isset($limits[$action])) {
             return true;
         }
-        
+
         $limit = $limits[$action];
-        
+
         if ($current_count === false) {
             set_transient($limit_key, 1, $limit['period']);
             return true;
         }
-        
+
         if ($current_count >= $limit['count']) {
             return new WP_Error(
                 'rate_limit_exceeded',
-                sprintf(__('Rate limit exceeded. Maximum %d %s per %d seconds.', 'wp-live-chat-users'), 
-                    $limit['count'], $action, $limit['period']),
+                /* translators: 1: maximum count, 2: action name, 3: period in seconds */
+                sprintf(
+                    __('Rate limit exceeded. Maximum %1$d %2$s per %3$d seconds.', 'wp-live-chat-users'),
+                    $limit['count'],
+                    $action,
+                    $limit['period']
+                ),
                 array('status' => 429)
             );
         }
-        
+
         set_transient($limit_key, $current_count + 1, $limit['period']);
         return true;
     }
@@ -1555,7 +1599,8 @@ class WPLCRestApiController {
     /**
      * Get typing status for thread (endpoint wrapper)
      */
-    public function get_typing_status_endpoint(WP_REST_Request $request) {
+    public function get_typing_status_endpoint(WP_REST_Request $request)
+    {
         $thread_id = $request->get_param('thread_id');
         $typing_users = $this->get_typing_status($thread_id);
 
@@ -1568,7 +1613,8 @@ class WPLCRestApiController {
     /**
      * Get read receipts for a message
      */
-    public function get_message_read_receipts(WP_REST_Request $request) {
+    public function get_message_read_receipts(WP_REST_Request $request)
+    {
         $user_id = $this->get_current_user_or_error();
         if (is_wp_error($user_id)) {
             return $user_id;
@@ -1577,13 +1623,13 @@ class WPLCRestApiController {
         $message_id = $request->get_param('message_id');
 
         global $wpdb;
-        
+
         $read_receipts_table = $wpdb->prefix . 'wplc_message_read_receipts';
         $messages_table = $wpdb->prefix . 'wplc_messages';
 
         // First check if user has access to this message
         $message = $wpdb->get_row($wpdb->prepare(
-            "SELECT thread_id FROM {$messages_table} WHERE id = %d",
+            "SELECT thread_id FROM `{$messages_table}` WHERE id = %d",
             $message_id
         ));
 
@@ -1607,8 +1653,8 @@ class WPLCRestApiController {
         // Get read receipts
         $receipts = $wpdb->get_results($wpdb->prepare(
             "SELECT rr.*, u.display_name, u.user_email 
-             FROM {$read_receipts_table} rr
-             LEFT JOIN {$wpdb->users} u ON rr.user_id = u.ID
+             FROM `{$read_receipts_table}` rr
+             LEFT JOIN `{$wpdb->users}` u ON rr.user_id = u.ID
              WHERE rr.message_id = %d
              ORDER BY rr.read_at ASC",
             $message_id
@@ -1634,7 +1680,8 @@ class WPLCRestApiController {
     /**
      * Get admin settings
      */
-    public function get_admin_settings(WP_REST_Request $request) {
+    public function get_admin_settings(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to access settings.', 'wp-live-chat-users'), array('status' => 403));
         }
@@ -1653,7 +1700,8 @@ class WPLCRestApiController {
     /**
      * Save admin settings
      */
-    public function save_admin_settings(WP_REST_Request $request) {
+    public function save_admin_settings(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to save settings.', 'wp-live-chat-users'), array('status' => 403));
         }
@@ -1680,7 +1728,8 @@ class WPLCRestApiController {
     /**
      * Generate new API key
      */
-    public function generate_api_key(WP_REST_Request $request) {
+    public function generate_api_key(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to generate API keys.', 'wp-live-chat-users'), array('status' => 403));
         }
@@ -1696,7 +1745,8 @@ class WPLCRestApiController {
     /**
      * Get migrations status
      */
-    public function get_migrations_status(WP_REST_Request $request) {
+    public function get_migrations_status(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to view migrations.', 'wp-live-chat-users'), array('status' => 403));
         }
@@ -1712,7 +1762,7 @@ class WPLCRestApiController {
 
         $migrations = array();
         foreach ($tables as $table => $name) {
-            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) === $table;
             $migrations[] = array(
                 'plugin' => 'WP Live Chat Core',
                 'name' => $name,
@@ -1728,7 +1778,8 @@ class WPLCRestApiController {
     /**
      * Run migrations
      */
-    public function run_migrations(WP_REST_Request $request) {
+    public function run_migrations(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to run migrations.', 'wp-live-chat-users'), array('status' => 403));
         }
@@ -1746,7 +1797,8 @@ class WPLCRestApiController {
     /**
      * Rollback migrations
      */
-    public function rollback_migrations(WP_REST_Request $request) {
+    public function rollback_migrations(WP_REST_Request $request)
+    {
         if (!current_user_can('manage_options')) {
             return new WP_Error('rest_forbidden', __('You do not have permission to rollback migrations.', 'wp-live-chat-users'), array('status' => 403));
         }
