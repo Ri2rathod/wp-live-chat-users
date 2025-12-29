@@ -1,35 +1,35 @@
 <?php
 
-namespace WPLCAPP\baseClasses;
+namespace Chatpulse\baseClasses;
 /**
  * The code that runs during plugin activation
  */
 defined('ABSPATH') or die('Something went wrong');
 
-use WPLCAPP\database\WPLCDatabaseManager;
-use WPLCAPP\admin\WPLCApiSettingsAdmin;
-use WPLCAPP\api\WPLCRestApiController;
-use WPLCAPP\baseClasses\WPLCShortcodeManager;
+use Chatpulse\database\ChatpulseDatabaseManager;
+use Chatpulse\admin\ChatpulseApiSettingsAdmin;
+use Chatpulse\api\ChatpulseRestApiController;
+use Chatpulse\baseClasses\ChatpulseShortcodeManager;
 
-final class WPLCApp
+final class ChatpulseApp
 {
     public function activate()
     {
         // Initialize database manager on activation
-        WPLCDatabaseManager::instance()->run_migrations();
+        ChatpulseDatabaseManager::instance()->run_migrations();
     }
     
     public function init()
     {
         // Initialize database manager
-        WPLCDatabaseManager::instance()->init();
+        ChatpulseDatabaseManager::instance()->init();
         
         // Initialize REST API
-        WPLCRestApiController::instance()->init();
+        ChatpulseRestApiController::instance()->init();
         
         // Initialize admin interface
         if (is_admin()) {
-            WPLCApiSettingsAdmin::instance()->init();
+            ChatpulseApiSettingsAdmin::instance()->init();
         }
 
         // Register shortcodes
@@ -38,11 +38,11 @@ final class WPLCApp
     public function register_shortcodes()
     {
         // Initialize the shortcode manager
-        $shortcode_manager = new WPLCShortcodeManager(WP_LIVE_CHAT_USERS_DIR . 'static');
+        $shortcode_manager = new ChatpulseShortcodeManager(CHATPULSE_DIR . 'static');
         
         // Register a shortcode with Vite assets
         $shortcode_manager->register(
-            'wpcl-chat',
+            'chatpulse-chat',
             function ($atts, $content) {
                 $atts = shortcode_atts([
                     'title' => 'Default Title',
@@ -52,7 +52,7 @@ final class WPLCApp
                 ob_start();
                 $this->enqueue_chat_scripts();
                 ?>
-            <div class="wpcl-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
+            <div class="chatpulse-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
             </div>
             <?php
                 return ob_get_clean();
@@ -60,8 +60,8 @@ final class WPLCApp
             [
                 [
                     'entry' => 'app/resources/main.tsx',
-                    'handle' => 'wpcl-chat',
-                    'dependencies' => ['wpcl-chat-scripts'],
+                    'handle' => 'chatpulse-chat',
+                    'dependencies' => ['chatpulse-chat-scripts'],
                     'in_footer' => false,
                 ]
             ],
@@ -75,25 +75,25 @@ final class WPLCApp
     public function enqueue_chat_scripts()
     {
         // Register a dummy script handle for dependencies
-        wp_register_script('wpcl-chat-scripts', '', [], WP_LIVE_CHAT_USERS_VERSION, ['in_footer' => true]);
-        wp_enqueue_script('wpcl-chat-scripts');
+        wp_register_script('chatpulse-chat-scripts', '', [], CHATPULSE_VERSION, ['in_footer' => true]);
+        wp_enqueue_script('chatpulse-chat-scripts');
 
         // Localize WordPress API settings
-        wp_localize_script('wpcl-chat-scripts', 'wpApiSettings', array(
+        wp_localize_script('chatpulse-chat-scripts', 'wpApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => $this->get_current_user_data()
         ));
 
         // Localize chat-specific settings
-        wp_localize_script('wpcl-chat-scripts', 'wplcChatSettings', array(
+        wp_localize_script('chatpulse-chat-scripts', 'chatpulseChatSettings', array(
             'socketUrl' => $this->get_socket_server_url(),
-            'apiNamespace' => 'wplc-chat/v1',
+            'apiNamespace' => 'chatpulse-chat/v1',
             'currentUser' => $this->get_current_user_data(),
             'settings' => array(
-                'enableTypingIndicators' => get_option('wplc_enable_typing_indicators', '1') === '1',
-                'enableReadReceipts' => get_option('wplc_enable_read_receipts', '1') === '1',
-                'enablePresenceStatus' => get_option('wplc_enable_presence_status', '1') === '1',
+                'enableTypingIndicators' => get_option('chatpulse_enable_typing_indicators', '1') === '1',
+                'enableReadReceipts' => get_option('chatpulse_enable_read_receipts', '1') === '1',
+                'enablePresenceStatus' => get_option('chatpulse_enable_presence_status', '1') === '1',
                 'autoMarkAsRead' => true,
                 'maxMessageLength' => 10000,
                 'allowedFileTypes' => array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'),
@@ -130,16 +130,16 @@ final class WPLCApp
      */
     private function get_socket_server_url() {
         // Get from options or environment
-        $socket_url = get_option('wplc_socket_server_url', '');
+        $socket_url = get_option('chatpulse_socket_server_url', '');
         
         if (empty($socket_url)) {
             // Fallback to environment variable or default
-            $socket_url = defined('WPLC_SOCKET_SERVER_URL') 
-                ? WPLC_SOCKET_SERVER_URL 
+            $socket_url = defined('Chatpulse_SOCKET_SERVER_URL') 
+                ? Chatpulse_SOCKET_SERVER_URL 
                 : 'http://localhost:3001';
         }
 
-        return apply_filters('wplc_socket_server_url', $socket_url);
+        return apply_filters('chatpulse_socket_server_url', $socket_url);
     }
 
 }

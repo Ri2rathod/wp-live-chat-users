@@ -1,15 +1,15 @@
 <?php
 
-namespace WPLCAPP\database\migrations;
+namespace Chatpulse\database\migrations;
 
-use WPLCAPP\database\classes\WPLCAbstractMigration;
+use Chatpulse\database\classes\ChatpulseAbstractMigration;
 
-class CreateMessagesTable extends WPLCAbstractMigration {
+class CreateMessagesTable extends ChatpulseAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_messages';
+        $table_name = $wpdb->prefix . 'chatpulse_messages';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -26,22 +26,22 @@ class CreateMessagesTable extends WPLCAbstractMigration {
             KEY idx_sender_id (sender_id),
             KEY idx_created_at (created_at),
             KEY idx_status (status),
-            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}wplc_message_threads(id) ON DELETE CASCADE
+            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}chatpulse_message_threads(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[WPLC Migration] Successfully created wp_wplc_messages table");
+        error_log("[Chatpulse Migration] Successfully created wp_chatpulse_messages table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_messages';
+        $table_name = $wpdb->prefix . 'chatpulse_messages';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[WPLC Migration] Successfully dropped wp_wplc_messages table");
+        error_log("[Chatpulse Migration] Successfully dropped wp_chatpulse_messages table");
     }
 }

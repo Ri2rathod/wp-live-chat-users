@@ -1,4 +1,4 @@
-# WP Live Chat Users - Complete Integration Guide
+# Chatpulse - Complete Integration Guide
 
 ## 🚀 Overview
 
@@ -31,7 +31,7 @@ This WordPress plugin provides a complete real-time chat system with:
 2. Activate the plugin in WordPress admin
 3. Run database migrations:
    ```bash
-   wp wplc migrate --up
+   wp chatpulse migrate --up
    ```
 
 ### Step 2: Install Socket.IO Server
@@ -68,7 +68,7 @@ This WordPress plugin provides a complete real-time chat system with:
 Use the shortcode to add chat to any page or post:
 
 ```
-[wpcl-chat]
+[chatpulse-chat]
 ```
 
 ### Programmatic Usage
@@ -77,20 +77,20 @@ Use the shortcode to add chat to any page or post:
 
 ```php
 // Get chat threads
-GET /wp-json/wplc-chat/v1/threads
+GET /wp-json/chatpulse-chat/v1/threads
 
 // Get messages in a thread
-GET /wp-json/wplc-chat/v1/threads/{id}/messages
+GET /wp-json/chatpulse-chat/v1/threads/{id}/messages
 
 // Send a message
-POST /wp-json/wplc-chat/v1/threads/{id}/messages
+POST /wp-json/chatpulse-chat/v1/threads/{id}/messages
 {
   "content": "Hello world!",
   "content_type": "text/plain"
 }
 
 // Create a new thread
-POST /wp-json/wplc-chat/v1/threads
+POST /wp-json/chatpulse-chat/v1/threads
 {
   "type": "private",
   "title": "Chat with John"
@@ -166,27 +166,27 @@ npm start      # Production mode
 
 ```bash
 # Run all pending migrations
-wp wplc migrate --up
+wp chatpulse migrate --up
 
 # Rollback last migration
-wp wplc migrate --down
+wp chatpulse migrate --down
 
 # Check migration status
-wp wplc migrate --status
+wp chatpulse migrate --status
 ```
 
 ## 🏗️ Architecture
 
 ### Database Schema
 
-**wplc_chat_threads:**
+**chatpulse_chat_threads:**
 - `id` - Primary key
 - `type` - 'private' or 'group'
 - `title` - Thread title
 - `created_by` - User ID who created
 - `created_at` / `updated_at` - Timestamps
 
-**wplc_chat_messages:**
+**chatpulse_chat_messages:**
 - `id` - Primary key
 - `thread_id` - Foreign key to threads
 - `sender_id` - User ID of sender
@@ -258,7 +258,7 @@ Response:
 ### Common Issues
 
 **Chat not loading:**
-1. Check if shortcode is present: `[wpcl-chat]`
+1. Check if shortcode is present: `[chatpulse-chat]`
 2. Verify WordPress API settings are localized
 3. Check browser console for JavaScript errors
 
@@ -290,7 +290,7 @@ DEBUG=socket.io:* npm start
 ### Plugin Updates
 1. Backup database
 2. Update plugin files
-3. Run migrations: `wp wplc migrate --up`
+3. Run migrations: `wp chatpulse migrate --up`
 4. Clear caches
 
 ### Server Updates
@@ -307,19 +307,19 @@ DEBUG=socket.io:* npm start
 - Customize React components in `app/resources/components/`
 
 ### API Extensions
-- Add new endpoints in `app/api/WPLCRestApiController.php`
+- Add new endpoints in `app/api/ChatpulseRestApiController.php`
 - Extend database schema with new migrations
 - Add custom Socket.IO events in `socket-server/server.js`
 
 ### WordPress Hooks
 ```php
 // Filter socket server URL
-add_filter('wplc_socket_server_url', function($url) {
+add_filter('chatpulse_socket_server_url', function($url) {
     return 'wss://your-socket-server.com';
 });
 
 // Filter chat loading conditions
-add_filter('wplc_should_load_chat', function($should_load) {
+add_filter('chatpulse_should_load_chat', function($should_load) {
     // Custom logic
     return $should_load;
 });
@@ -351,7 +351,7 @@ GPL-2.0+ - See LICENSE file for details.
 
 ## 🆘 Support
 
-- GitHub Issues: [wp-live-chat-users/issues](https://github.com/Ri2rathod/wp-live-chat-users/issues)
+- GitHub Issues: [chatpulse/issues](https://github.com/Ri2rathod/chatpulse/issues)
 - Documentation: [Full Documentation](./docs/)
 - Email: [Support Email]
 

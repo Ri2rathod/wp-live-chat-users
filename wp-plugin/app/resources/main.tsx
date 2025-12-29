@@ -18,7 +18,7 @@ interface ChatContainer extends HTMLElement {
 // Function to initialize the chat app
 const initBookAppointment = (): void => {
   // Find all instances of the shortcode on the page
-  const containers = document.querySelectorAll('.wpcl-chat') as NodeListOf<ChatContainer>;
+  const containers = document.querySelectorAll('.chatpulse-chat') as NodeListOf<ChatContainer>;
   
   // Render each instance
   containers.forEach((container: ChatContainer) => {

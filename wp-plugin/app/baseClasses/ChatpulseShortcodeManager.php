@@ -1,6 +1,6 @@
 <?php
 
-namespace WPLCAPP\baseClasses;
+namespace Chatpulse\baseClasses;
 
 use function Kucrut\Vite\enqueue_asset;
 
@@ -16,7 +16,7 @@ defined('ABSPATH') or die('Something went wrong');
  */
 
 
-class WPLCShortcodeManager
+class ChatpulseShortcodeManager
 {
 
     /**

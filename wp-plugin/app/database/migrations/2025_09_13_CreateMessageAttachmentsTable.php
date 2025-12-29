@@ -1,15 +1,15 @@
 <?php
 
-namespace WPLCAPP\database\migrations;
+namespace Chatpulse\database\migrations;
 
-use WPLCAPP\database\classes\WPLCAbstractMigration;
+use Chatpulse\database\classes\ChatpulseAbstractMigration;
 
-class CreateMessageAttachmentsTable extends WPLCAbstractMigration {
+class CreateMessageAttachmentsTable extends ChatpulseAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_message_attachments';
+        $table_name = $wpdb->prefix . 'chatpulse_message_attachments';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -23,20 +23,20 @@ class CreateMessageAttachmentsTable extends WPLCAbstractMigration {
             PRIMARY KEY (id),
             KEY idx_message_id (message_id),
             KEY idx_mime_type (mime_type),
-            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}wplc_messages(id) ON DELETE CASCADE
+            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}chatpulse_messages(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[WPLC Migration] Successfully created wp_wplc_message_attachments table");
+        error_log("[Chatpulse Migration] Successfully created wp_chatpulse_message_attachments table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_message_attachments';
+        $table_name = $wpdb->prefix . 'chatpulse_message_attachments';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
     }
 }

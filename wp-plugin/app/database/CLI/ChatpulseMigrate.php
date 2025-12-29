@@ -1,12 +1,12 @@
 <?php
 
-namespace WPLCAPP\database\CLI;
+namespace Chatpulse\database\CLI;
 
-use WPLCAPP\database\classes\WPLCMigrator;
+use Chatpulse\database\classes\ChatpulseMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCMigrate {
+class ChatpulseMigrate {
 
     /**
      * Run pending migrations
@@ -21,15 +21,15 @@ class WPLCMigrate {
      *
      * ## EXAMPLES
      *
-     *     wp wplc migrate
-     *     wp wplc migrate --rollback
-     *     wp wplc migrate --migration=CreateMessagesTable
+     *     wp chatpulse migrate
+     *     wp chatpulse migrate --rollback
+     *     wp chatpulse migrate --migration=CreateMessagesTable
      *
      * @param array $args
      * @param array $assoc_args
      */
     public function __invoke($args, $assoc_args) {
-        $migrator = WPLCMigrator::instance();
+        $migrator = ChatpulseMigrator::instance();
         
         // Setup migrations table first
         $migrator->setup();
@@ -60,7 +60,7 @@ class WPLCMigrate {
      * Show migration status
      */
     private function show_status() {
-        $migrator = WPLCMigrator::instance();
+        $migrator = ChatpulseMigrator::instance();
         $status = $migrator->get_migrations_by_plugin();
         
         if (empty($status)) {

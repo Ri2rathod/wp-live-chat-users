@@ -131,13 +131,13 @@ To see the changes in action:
 
 1. **Rebuild Frontend**:
    ```bash
-   cd /var/www/html/wp/wp-live-chat-users/wp-live-chat-users/wp-plugin
+   cd /var/www/html/wp/chatpulse/chatpulse/wp-plugin
    bun run build
    ```
 
 2. **Restart Socket Server** (if running):
    ```bash
-   cd /var/www/html/wp/wp-live-chat-users/wp-live-chat-users/socket-server
+   cd /var/www/html/wp/chatpulse/chatpulse/socket-server
    bun run server.js
    ```
 

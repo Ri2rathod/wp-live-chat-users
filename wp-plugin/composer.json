@@ -1,5 +1,5 @@
 {
-    "name": "ri2/wp-live-chat-users",
+    "name": "ri2/chatpulse",
     "description": "Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server.",
     "type": "project",
     "require": {
@@ -7,7 +7,7 @@
     },
     "autoload": {
         "psr-4": {
-            "WPLCAPP\\": "app/"
+            "Chatpulse\\": "app/"
         }
     },
     "authors": [

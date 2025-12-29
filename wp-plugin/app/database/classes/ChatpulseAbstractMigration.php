@@ -1,10 +1,10 @@
 <?php
 
-namespace WPLCAPP\database\classes;
+namespace Chatpulse\database\classes;
 
 defined('ABSPATH') or die('Something went wrong');
 
-abstract class WPLCAbstractMigration {
+abstract class ChatpulseAbstractMigration {
     /**
      * Get database collation.
      *

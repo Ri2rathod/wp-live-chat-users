@@ -1,15 +1,15 @@
 <?php
 
-namespace WPLCAPP\database\migrations;
+namespace Chatpulse\database\migrations;
 
-use WPLCAPP\database\classes\WPLCAbstractMigration;
+use Chatpulse\database\classes\ChatpulseAbstractMigration;
 
-class CreateMessageThreadsTable extends WPLCAbstractMigration {
+class CreateMessageThreadsTable extends ChatpulseAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_message_threads';
+        $table_name = $wpdb->prefix . 'chatpulse_message_threads';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -29,15 +29,15 @@ class CreateMessageThreadsTable extends WPLCAbstractMigration {
         dbDelta($sql);
 
         // Log success
-        error_log("[WPLC Migration] Successfully created wp_wplc_message_threads table");
+        error_log("[Chatpulse Migration] Successfully created wp_chatpulse_message_threads table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'wplc_message_threads';
+        $table_name = $wpdb->prefix . 'chatpulse_message_threads';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[WPLC Migration] Successfully dropped wp_wplc_message_threads table");
+        error_log("[Chatpulse Migration] Successfully dropped wp_chatpulse_message_threads table");
     }
 }

@@ -1,31 +1,31 @@
 <?php
 
-namespace WPLCAPP\database;
+namespace Chatpulse\database;
 
-use WPLCAPP\database\classes\WPLCMigrator;
+use Chatpulse\database\classes\ChatpulseMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCDatabaseManager {
+class ChatpulseDatabaseManager {
 
     /**
-     * @var WPLCDatabaseManager
+     * @var ChatpulseDatabaseManager
      */
     private static $instance;
 
     /**
-     * @var WPLCMigrator
+     * @var ChatpulseMigrator
      */
     private $migrator;
 
     /**
      * Get singleton instance
      *
-     * @return WPLCDatabaseManager
+     * @return ChatpulseDatabaseManager
      */
     public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WPLCDatabaseManager ) ) {
-            self::$instance = new WPLCDatabaseManager();
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ChatpulseDatabaseManager ) ) {
+            self::$instance = new ChatpulseDatabaseManager();
         }
 
         return self::$instance;
@@ -35,7 +35,7 @@ class WPLCDatabaseManager {
      * Initialize the database manager
      */
     public function init() {
-        $this->migrator = WPLCMigrator::instance('wplc');
+        $this->migrator = ChatpulseMigrator::instance('chatpulse');
         
         // Setup migrations table on plugin activation
         add_action('wp_loaded', array($this, 'setup_migrations_table'));
@@ -45,12 +45,12 @@ class WPLCDatabaseManager {
      * Setup the migrations table
      */
     public function setup_migrations_table() {
-        if (get_option('wplc_migrations_table_created', false)) {
+        if (get_option('chatpulse_migrations_table_created', false)) {
             return;
         }
 
         $this->migrator->setup();
-        update_option('wplc_migrations_table_created', true);
+        update_option('chatpulse_migrations_table_created', true);
     }
 
     /**
@@ -62,7 +62,7 @@ class WPLCDatabaseManager {
         $count = $this->migrator->run();
         
         if ($count > 0) {
-            error_log("[WPLC] Ran {$count} migrations successfully");
+            error_log("[Chatpulse] Ran {$count} migrations successfully");
         }
     }
 
@@ -73,7 +73,7 @@ class WPLCDatabaseManager {
         $count = $this->migrator->run(null, true);
         
         if ($count > 0) {
-            error_log("[WPLC] Rolled back {$count} migrations successfully");
+            error_log("[Chatpulse] Rolled back {$count} migrations successfully");
         }
     }
 

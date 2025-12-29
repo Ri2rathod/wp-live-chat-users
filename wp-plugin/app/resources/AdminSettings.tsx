@@ -77,7 +77,7 @@ export default function AdminSettings() {
 
   // Helper to make API requests
   const makeApiRequest = async (endpoint: string, method = 'GET', data?: any) => {
-    const url = `${(window as any).wpApiSettings.root}wplc-chat/v1/${endpoint}`;
+    const url = `${(window as any).wpApiSettings.root}chatpulse-chat/v1/${endpoint}`;
     const options: RequestInit = {
       method,
       headers: {
@@ -381,11 +381,11 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
-                    <div>• <code className="text-xs">wp_wplc_message_threads</code> - Chat threads</div>
-                    <div>• <code className="text-xs">wp_wplc_messages</code> - Individual messages</div>
-                    <div>• <code className="text-xs">wp_wplc_message_attachments</code> - File attachments</div>
-                    <div>• <code className="text-xs">wp_wplc_message_read_receipts</code> - Read receipts</div>
-                    <div>• <code className="text-xs">wp_wplc_message_participants</code> - Thread participants</div>
+                    <div>• <code className="text-xs">wp_chatpulse_message_threads</code> - Chat threads</div>
+                    <div>• <code className="text-xs">wp_chatpulse_messages</code> - Individual messages</div>
+                    <div>• <code className="text-xs">wp_chatpulse_message_attachments</code> - File attachments</div>
+                    <div>• <code className="text-xs">wp_chatpulse_message_read_receipts</code> - Read receipts</div>
+                    <div>• <code className="text-xs">wp_chatpulse_message_participants</code> - Thread participants</div>
                   </div>
                 </CardContent>
               </Card>
@@ -520,14 +520,14 @@ export default function AdminSettings() {
                 <Alert>
                   <Key className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>API Endpoint:</strong> {(window as any).wpApiSettings.root}wplc-chat/v1/
+                    <strong>API Endpoint:</strong> {(window as any).wpApiSettings.root}chatpulse-chat/v1/
                   </AlertDescription>
                 </Alert>
 
                 <div className="space-y-2">
                   <h4 className="font-semibold">Authentication Methods:</h4>
                   <div className="space-y-2 text-sm">
-                    <div>• <strong>Header:</strong> <code className="text-xs">X-WPLC-API-Key: YOUR_API_KEY</code></div>
+                    <div>• <strong>Header:</strong> <code className="text-xs">X-Chatpulse-API-Key: YOUR_API_KEY</code></div>
                     <div>• <strong>Query Parameter:</strong> <code className="text-xs">?api_key=YOUR_API_KEY</code></div>
                   </div>
                 </div>

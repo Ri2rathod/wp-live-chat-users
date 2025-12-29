@@ -1,13 +1,13 @@
 <?php
 
-namespace WPLCAPP\admin;
+namespace Chatpulse\admin;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCApiSettingsAdmin {
+class ChatpulseApiSettingsAdmin {
 
     /**
-     * @var WPLCApiSettingsAdmin
+     * @var ChatpulseApiSettingsAdmin
      */
     private static $instance;
 
@@ -15,8 +15,8 @@ class WPLCApiSettingsAdmin {
      * Get singleton instance
      */
     public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WPLCApiSettingsAdmin ) ) {
-            self::$instance = new WPLCApiSettingsAdmin();
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ChatpulseApiSettingsAdmin ) ) {
+            self::$instance = new ChatpulseApiSettingsAdmin();
         }
 
         return self::$instance;
@@ -34,10 +34,10 @@ class WPLCApiSettingsAdmin {
      */
     public function add_admin_menu() {
         add_options_page(
-            'WPLC API Settings',
-            'WPLC API', 
+            'Chatpulse API Settings',
+            'Chatpulse API', 
             'manage_options',
-            'wplc-api-settings',
+            'chatpulse-api-settings',
             array($this, 'render_admin_page')
         );
     }
@@ -50,7 +50,7 @@ class WPLCApiSettingsAdmin {
         $this->enqueue_admin_assets();
         
         ?>
-        <div id="wplc-admin-settings-root"></div>
+        <div id="chatpulse-admin-settings-root"></div>
         <?php
     }
 
@@ -60,17 +60,17 @@ class WPLCApiSettingsAdmin {
     private function enqueue_admin_assets() {
         // Use kucrut/vite-for-wp enqueue_asset function
         \Kucrut\Vite\enqueue_asset(
-            WP_LIVE_CHAT_USERS_DIR . 'static',
+            CHATPULSE_DIR . 'static',
             'app/resources/main-admin.tsx',
             [
-                'handle' => 'wplc-admin-settings',
+                'handle' => 'chatpulse-admin-settings',
                 'dependencies' => [],
                 'in-footer' => true,
             ]
         );
         
         // Localize WordPress API settings
-        wp_localize_script('wplc-admin-settings', 'wpApiSettings', array(
+        wp_localize_script('chatpulse-admin-settings', 'wpApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => array(

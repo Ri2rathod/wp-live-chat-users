@@ -5,7 +5,7 @@ The WordPress Live Chat Users REST API has been separated into two main files fo
 
 ## File Structure
 
-### 1. `WPLCRestApiRoutes.php` - Route Registration
+### 1. `ChatpulseRestApiRoutes.php` - Route Registration
 **Purpose**: Handles all REST API route registration and validation rules.
 
 **Features**:
@@ -21,7 +21,7 @@ The WordPress Live Chat Users REST API has been separated into two main files fo
 - **Typing Routes**: `/threads/{id}/typing` - GET/POST for typing indicators
 - **Read Receipts Routes**: `/threads/{id}/read` and `/messages/{id}/receipts` - Read status management
 
-### 2. `WPLCRestApiController.php` - Controller Callbacks
+### 2. `ChatpulseRestApiController.php` - Controller Callbacks
 **Purpose**: Contains all the callback functions that handle the actual API logic.
 
 **Features**:
@@ -44,7 +44,7 @@ The WordPress Live Chat Users REST API has been separated into two main files fo
 
 ## API Endpoints
 
-### Base URL: `wp-json/wplc-chat/v1/`
+### Base URL: `wp-json/chatpulse-chat/v1/`
 
 #### Threads
 - `GET /threads` - Get user's threads with pagination and search
@@ -93,12 +93,12 @@ The WordPress Live Chat Users REST API has been separated into two main files fo
 
 ```javascript
 // Get threads
-fetch('/wp-json/wplc-chat/v1/threads?page=1&per_page=10')
+fetch('/wp-json/chatpulse-chat/v1/threads?page=1&per_page=10')
   .then(response => response.json())
   .then(data => console.log(data.threads));
 
 // Send message
-fetch('/wp-json/wplc-chat/v1/threads/123/messages', {
+fetch('/wp-json/chatpulse-chat/v1/threads/123/messages', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -125,11 +125,11 @@ fetch('/wp-json/wplc-chat/v1/threads/123/messages', {
 The routes are automatically registered when the main controller is initialized:
 
 ```php
-// In WPLCApp.php
-WPLCRestApiController::instance()->init();
+// In ChatpulseApp.php
+ChatpulseRestApiController::instance()->init();
 
 // This automatically calls:
-WPLCRestApiRoutes::instance()->init();
+ChatpulseRestApiRoutes::instance()->init();
 ```
 
 ## Future Enhancements

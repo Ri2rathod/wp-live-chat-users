@@ -6,7 +6,7 @@ import fetch from 'node-fetch'; // You may need to install: npm install node-fet
 class WordPressIntegration {
   constructor(config = {}) {
     this.wpBaseUrl = config.wpBaseUrl || 'http://localhost/wp-json';
-    this.apiNamespace = config.apiNamespace || 'wplc-chat/v1';
+    this.apiNamespace = config.apiNamespace || 'chatpulse-chat/v1';
     this.apiKey = config.apiKey || null; // For application passwords
     this.timeout = config.timeout || 10000;
     
@@ -30,7 +30,7 @@ class WordPressIntegration {
 
     // Add API key authentication if available
     if (this.apiKey) {
-      headers['X-WPLC-API-Key'] = this.apiKey;
+      headers['X-Chatpulse-API-Key'] = this.apiKey;
     }
 
     // You could implement per-user JWT tokens here
@@ -519,8 +519,8 @@ class WordPressIntegration {
  */
 export function createWordPressIntegration() {
   const config = {
-    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp/wp-live-chat-users/wp-json',
-    apiNamespace: process.env.WP_API_NAMESPACE || 'wplc-chat/v1',
+    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp/chatpulse/wp-json',
+    apiNamespace: process.env.WP_API_NAMESPACE || 'chatpulse-chat/v1',
     apiKey: process.env.WP_API_KEY || null,
     timeout: parseInt(process.env.WP_API_TIMEOUT || '10000')
   };

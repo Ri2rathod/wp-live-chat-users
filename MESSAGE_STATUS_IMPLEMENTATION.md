@@ -1,12 +1,12 @@
 # Message Delivery and Read Status Implementation
 
 ## Overview
-Implemented comprehensive message delivery and read status tracking using the `wp_wplc_message_read_receipts` table with separate columns for `delivered_at` and `read_at`.
+Implemented comprehensive message delivery and read status tracking using the `wp_chatpulse_message_read_receipts` table with separate columns for `delivered_at` and `read_at`.
 
 ## Database Changes
 
 ### Updated Table Structure
-**Table:** `wp_wplc_message_read_receipts`
+**Table:** `wp_chatpulse_message_read_receipts`
 
 New columns:
 - `delivered_at` (datetime, nullable) - When message was delivered to recipient's device
@@ -27,7 +27,7 @@ New columns:
 
 ## Backend Changes
 
-### WPLCRestApiController.php
+### ChatpulseRestApiController.php
 
 #### 1. Message Sending (send_message)
 - Automatically creates delivery receipts for all thread participants (except sender)
@@ -118,7 +118,7 @@ Updated message status indicator to show different visual states:
 ### Message Flow
 
 1. **User sends message**
-   - Message stored in `wp_wplc_messages` table
+   - Message stored in `wp_chatpulse_messages` table
    - Delivery receipts created for all participants (except sender)
    - `delivered_at` set to current timestamp
    - `read_at` is NULL
@@ -150,17 +150,17 @@ For sender's messages:
 
 ```bash
 # Via REST API
-curl -X POST "http://your-site.com/wp-json/wplc-chat/v1/admin/migrate" \
+curl -X POST "http://your-site.com/wp-json/chatpulse-chat/v1/admin/migrate" \
   -H "X-WP-Nonce: YOUR_NONCE"
 
 # Or via WP-CLI
-wp wplc migrate
+wp chatpulse migrate
 ```
 
 ### 2. Rebuild Frontend
 
 ```bash
-cd /var/www/html/wp/wp-live-chat-users/wp-live-chat-users/wp-plugin
+cd /var/www/html/wp/chatpulse/chatpulse/wp-plugin
 bun run build
 ```
 
@@ -195,7 +195,7 @@ SELECT
     rr.delivered_at,
     rr.read_at,
     rr.created_at
-FROM wp_wplc_message_read_receipts rr
+FROM wp_chatpulse_message_read_receipts rr
 JOIN wp_users u ON rr.user_id = u.ID
 WHERE rr.message_id = YOUR_MESSAGE_ID;
 
@@ -206,8 +206,8 @@ SELECT
     COUNT(rr.id) as total_recipients,
     SUM(CASE WHEN rr.delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered_count,
     SUM(CASE WHEN rr.read_at IS NOT NULL THEN 1 ELSE 0 END) as read_count
-FROM wp_wplc_messages m
-LEFT JOIN wp_wplc_message_read_receipts rr ON m.id = rr.message_id
+FROM wp_chatpulse_messages m
+LEFT JOIN wp_chatpulse_message_read_receipts rr ON m.id = rr.message_id
 WHERE m.id = YOUR_MESSAGE_ID
 GROUP BY m.id;
 ```
@@ -223,10 +223,10 @@ GROUP BY m.id;
 
 ## API Endpoints Used
 
-- `POST /wplc-chat/v1/threads/{id}/messages` - Send message (creates delivery receipts)
-- `GET /wplc-chat/v1/threads/{id}/messages` - Load messages with status
-- `POST /wplc-chat/v1/messages/read` - Mark messages as read
-- `POST /wplc-chat/v1/admin/migrate` - Run database migrations
+- `POST /chatpulse-chat/v1/threads/{id}/messages` - Send message (creates delivery receipts)
+- `GET /chatpulse-chat/v1/threads/{id}/messages` - Load messages with status
+- `POST /chatpulse-chat/v1/messages/read` - Mark messages as read
+- `POST /chatpulse-chat/v1/admin/migrate` - Run database migrations
 
 ## Socket Events
 

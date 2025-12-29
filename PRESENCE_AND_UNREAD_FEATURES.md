@@ -349,7 +349,7 @@ interface ChatItem {
 ### Unread Count Incorrect
 1. **Reload Page**: Check if API returns correct initial count
 2. **Check Active Chat**: Messages in active chat shouldn't increment
-3. **Database**: Verify `unread_count` in `wp_wplc_message_threads` table
+3. **Database**: Verify `unread_count` in `wp_chatpulse_message_threads` table
 4. **Mark as Read**: Ensure read receipts are working
 
 ### Green Dot Not Showing

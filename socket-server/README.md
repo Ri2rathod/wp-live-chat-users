@@ -1,7 +1,7 @@
 # WebSocket (Socket.IO) Implementation
 
 ## Overview
-This WebSocket server implements real-time communication for the WP Live Chat Users plugin using Socket.IO. It provides real-time messaging, typing indicators, presence management, and read receipts.
+This WebSocket server implements real-time communication for the Chatpulse plugin using Socket.IO. It provides real-time messaging, typing indicators, presence management, and read receipts.
 
 ## Architecture
 
@@ -135,7 +135,7 @@ npm start
 ```bash
 # WordPress Integration
 WP_BASE_URL=http://localhost/wp-json
-WP_API_NAMESPACE=wplc-chat/v1
+WP_API_NAMESPACE=chatpulse-chat/v1
 WP_API_KEY=your-api-key
 
 # Server Configuration

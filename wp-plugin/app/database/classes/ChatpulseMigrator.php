@@ -1,29 +1,29 @@
 <?php
 
-namespace WPLCAPP\database\classes;
+namespace Chatpulse\database\classes;
 
-use WPLCAPP\database\CLI\WPLCMigrate;
+use Chatpulse\database\CLI\ChatpulseMigrate;
 use WP_Error;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCMigrator {
+class ChatpulseMigrator {
 
     /**
-     * @var WPLCMigrator
+     * @var ChatpulseMigrator
      */
     private static $instance;
 
-    protected $table_name = 'wplc_migrations';
+    protected $table_name = 'chatpulse_migrations';
 
     /**
      * @param string $command_name
      *
-     * @return WPLCMigrator Instance
+     * @return ChatpulseMigrator Instance
      */
-    public static function instance( $command_name = 'wplc') {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WPLCMigrator ) ) {
-            self::$instance = new WPLCMigrator();
+    public static function instance( $command_name = 'chatpulse') {
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ChatpulseMigrator ) ) {
+            self::$instance = new ChatpulseMigrator();
             self::$instance->init( $command_name );
         }
 
@@ -37,7 +37,7 @@ class WPLCMigrator {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
-            \WP_CLI::add_command( $command_name . ' migrate', WPLCMigrate::class );
+            \WP_CLI::add_command( $command_name . ' migrate', ChatpulseMigrate::class );
         }
     }
 
@@ -157,16 +157,16 @@ class WPLCMigrator {
         // Define migration paths for different plugins
         $migration_paths = array(
             array(
-                'key' => 'wplc',
-                'name' => 'WP Live Chat Users',
+                'key' => 'chatpulse',
+                'name' => 'Chatpulse',
                 'path' => $this->get_migrations_path()
             )
         );
         // Allow Addons plugins to register their migration paths
-        $migration_paths = apply_filters( 'wplc_wp_migrations_paths_detailed', $migration_paths );
+        $migration_paths = apply_filters( 'chatpulse_wp_migrations_paths_detailed', $migration_paths );
 
         // Also support the old filter format for backward compatibility
-        $old_format_paths = apply_filters( 'wplc_wp_migrations_paths', array( $this->get_migrations_path() ) );
+        $old_format_paths = apply_filters( 'chatpulse_wp_migrations_paths', array( $this->get_migrations_path() ) );
         
         // Convert old format to new format if different from default
         foreach ( $old_format_paths as $index => $path ) {
@@ -193,7 +193,7 @@ class WPLCMigrator {
      * @return string
      */
     protected function get_migrations_path() {
-        return apply_filters( 'wplc_wp_migrations_path', WP_LIVE_CHAT_USERS_DIR . '/app/database/migrations' );
+        return apply_filters( 'chatpulse_wp_migrations_path', CHATPULSE_DIR . '/app/database/migrations' );
     }
 
     /**
@@ -244,7 +244,7 @@ class WPLCMigrator {
             
             if ( false === $fq_class_name ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( "[WPLCMigrator] Migration class not found: {$class_name} in file {$file} (Plugin: {$plugin})" );
+                    error_log( "[ChatpulseMigrator] Migration class not found: {$class_name} in file {$file} (Plugin: {$plugin})" );
                 }
                 continue;
             }
@@ -255,7 +255,7 @@ class WPLCMigrator {
             
             if ( ! method_exists( $migration_instance, $method ) ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( "[WPLCMigrator] Method '{$method}' not found in migration class: {$class_name} ({$file}) (Plugin: {$plugin})" );
+                    error_log( "[ChatpulseMigrator] Method '{$method}' not found in migration class: {$class_name} ({$file}) (Plugin: {$plugin})" );
                 }
                 continue;
             }
@@ -267,7 +267,7 @@ class WPLCMigrator {
                 if ( $rollback ) {
                     $wpdb->delete( $table, array( 'name' => $name ) );
                     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                        error_log( "[WPLCMigrator] Successfully rolled back migration: {$name} (Plugin: {$plugin})" );
+                        error_log( "[ChatpulseMigrator] Successfully rolled back migration: {$name} (Plugin: {$plugin})" );
                     }
                 } else {
                     $wpdb->insert( $table, array( 
@@ -275,12 +275,12 @@ class WPLCMigrator {
                         'date_ran' => current_time( 'mysql' ) 
                     ) );
                     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                        error_log( "[WPLCMigrator] Successfully ran migration: {$name} (Plugin: {$plugin})" );
+                        error_log( "[ChatpulseMigrator] Successfully ran migration: {$name} (Plugin: {$plugin})" );
                     }
                 }
             } catch ( \Exception $e ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( "[WPLCMigrator] Error running migration {$name} (Plugin: {$plugin}): " . $e->getMessage() );
+                    error_log( "[ChatpulseMigrator] Error running migration {$name} (Plugin: {$plugin}): " . $e->getMessage() );
                 }
                 // Continue with other migrations even if one fails
                 continue;
@@ -346,12 +346,12 @@ class WPLCMigrator {
      * Scaffold a new migration using the stub from the `stubs` directory.
      *
      * @param string $migration_name Camel cased migration name, e.g. myMigration.
-     * @param string $plugin_key Plugin key to determine which path to use (optional, defaults to 'wplc')
+     * @param string $plugin_key Plugin key to determine which path to use (optional, defaults to 'chatpulse')
      *
      * @return string|WP_Error Name of created migration file on success, WP_Error
      *                         instance on failure.
      */
-    public function scaffold( $migration_name, $plugin_key = 'wplc' ): string|WP_Error {
+    public function scaffold( $migration_name, $plugin_key = 'chatpulse' ): string|WP_Error {
         // Get migration paths
         $migration_paths = $this->get_all_migration_paths();
         
@@ -376,7 +376,7 @@ class WPLCMigrator {
             global $wp_filesystem;
             if ( ! $wp_filesystem->mkdir( $target_path, 0755 ) ) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( "[WPLCMigrator] Unable to create migrations folder {$target_path}" );
+                    error_log( "[ChatpulseMigrator] Unable to create migrations folder {$target_path}" );
                 }
                 return new \WP_Error(
                     'migrations_folder_error',
@@ -385,13 +385,13 @@ class WPLCMigrator {
             }
         }
 
-        $stub_dir  = WP_LIVE_CHAT_USERS_DIR . '/app/database/stubs';
-        $stub_path = apply_filters( 'wplc_migration_stub_path', "{$stub_dir}/migration.stub" );
+        $stub_dir  = CHATPULSE_DIR . '/app/database/stubs';
+        $stub_path = apply_filters( 'chatpulse_migration_stub_path', "{$stub_dir}/migration.stub" );
         $stub      = file_get_contents( $stub_path );
 
         if ( ! $stub ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( "[WPLCMigrator] Unable to read migration stub file: {$stub_path}" );
+                error_log( "[ChatpulseMigrator] Unable to read migration stub file: {$stub_path}" );
             }
             return new \WP_Error(
                 'stub_file_error',
@@ -406,7 +406,7 @@ class WPLCMigrator {
 
         if ( ! file_put_contents( $file_path, $boilerplate ) ) {
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( "[WPLCMigrator] Unable to create migration file: {$file_path}" );
+                error_log( "[ChatpulseMigrator] Unable to create migration file: {$file_path}" );
             }
             return new \WP_Error(
                 'file_creation_error',
@@ -415,7 +415,7 @@ class WPLCMigrator {
         }
 
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( "[WPLCMigrator] Successfully created migration file: {$file_path} (Plugin: {$plugin_key})" );
+            error_log( "[ChatpulseMigrator] Successfully created migration file: {$file_path} (Plugin: {$plugin_key})" );
         }
         return $filename;
     }

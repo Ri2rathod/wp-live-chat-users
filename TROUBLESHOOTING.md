@@ -26,23 +26,23 @@
 
 #### A. Check WordPress User Login
 1. Make sure you're logged into WordPress admin
-2. Navigate to the page with the `[wpcl-chat]` shortcode
-3. Check browser console for `wpApiSettings` and `wplcChatSettings`
+2. Navigate to the page with the `[chatpulse-chat]` shortcode
+3. Check browser console for `wpApiSettings` and `chatpulseChatSettings`
 
 #### B. Verify Plugin Activation
 1. Go to WordPress Admin > Plugins
-2. Ensure "WP Live Chat Users" is activated
+2. Ensure "Chatpulse" is activated
 3. Check for any activation errors
 
 #### C. Test API Endpoints Manually
 ```bash
 # Test if WordPress REST API is working
-curl -X GET "http://localhost/wp/wp-live-chat-users/wp-json/wp/v2/users/me" \
+curl -X GET "http://localhost/wp/chatpulse/wp-json/wp/v2/users/me" \
   -H "X-WP-Nonce: [NONCE_VALUE]" \
   --cookie "wordpress_logged_in_[HASH]=[COOKIE_VALUE]"
 
 # Test chat API endpoint
-curl -X GET "http://localhost/wp/wp-live-chat-users/wp-json/wplc-chat/v1/threads" \
+curl -X GET "http://localhost/wp/chatpulse/wp-json/chatpulse-chat/v1/threads" \
   -H "X-WP-Nonce: [NONCE_VALUE]" \
   --cookie "wordpress_logged_in_[HASH]=[COOKIE_VALUE]"
 ```
@@ -50,16 +50,16 @@ curl -X GET "http://localhost/wp/wp-live-chat-users/wp-json/wplc-chat/v1/threads
 #### D. Check Database Tables
 ```sql
 -- Check if chat tables exist
-SHOW TABLES LIKE 'wp_wplc_%';
+SHOW TABLES LIKE 'wp_chatpulse_%';
 
 -- Check migration status
-SELECT * FROM wp_wplc_migrations;
+SELECT * FROM wp_chatpulse_migrations;
 ```
 
 #### E. Run Database Migrations
 ```bash
 # If tables don't exist, run migrations
-wp wplc migrate --up
+wp chatpulse migrate --up
 ```
 
 ## Quick Debug JavaScript
@@ -69,7 +69,7 @@ Add this to browser console to check WordPress settings:
 ```javascript
 // Check if WordPress settings are loaded
 console.log('wpApiSettings:', window.wpApiSettings);
-console.log('wplcChatSettings:', window.wplcChatSettings);
+console.log('chatpulseChatSettings:', window.chatpulseChatSettings);
 
 // Check current user
 if (window.wpApiSettings?.currentUser) {
@@ -91,7 +91,7 @@ if (window.wpApiSettings?.nonce) {
 ```javascript
 // Good output:
 wpApiSettings: {
-  root: "http://localhost/wp/wp-live-chat-users/wp-json/",
+  root: "http://localhost/wp/chatpulse/wp-json/",
   nonce: "abc123def456",
   currentUser: {
     id: 1,
@@ -102,9 +102,9 @@ wpApiSettings: {
   }
 }
 
-wplcChatSettings: {
+chatpulseChatSettings: {
   socketUrl: "http://localhost:3001",
-  apiNamespace: "wplc-chat/v1",
+  apiNamespace: "chatpulse-chat/v1",
   currentUser: {...},
   settings: {...}
 }

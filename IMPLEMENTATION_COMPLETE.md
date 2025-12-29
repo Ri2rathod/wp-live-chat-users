@@ -1,4 +1,4 @@
-# 🎉 WP Live Chat Users - Implementation Complete!
+# 🎉 Chatpulse - Implementation Complete!
 
 ## ✅ What's Been Implemented
 
@@ -70,7 +70,7 @@ npm start
 
 ### 2. Activate WordPress Plugin
 - Install and activate the plugin in WordPress
-- Run migrations: `wp wplc migrate --up`
+- Run migrations: `wp chatpulse migrate --up`
 
 ### 3. Configure Settings
 - Go to **Settings > Live Chat** in WordPress admin
@@ -78,13 +78,13 @@ npm start
 
 ### 4. Add Chat to Pages
 ```html
-[wpcl-chat]
+[chatpulse-chat]
 ```
 
 ## 📁 Project Structure
 
 ```
-wp-live-chat-users/
+chatpulse/
 ├── wp-plugin/                     # WordPress Plugin
 │   ├── app/
 │   │   ├── api/                   # REST API Controllers
@@ -97,7 +97,7 @@ wp-live-chat-users/
 │   │   │   └── components/        # UI Components
 │   │   └── baseClasses/           # Core Classes
 │   ├── static/                    # Built Assets
-│   └── wp-live-chat-users.php     # Main Plugin File
+│   └── chatpulse.php     # Main Plugin File
 │
 ├── socket-server/                 # Socket.IO Server
 │   ├── server.js                  # Main Server File
@@ -112,12 +112,12 @@ wp-live-chat-users/
 
 ### REST API
 ```
-GET    /wp-json/wplc-chat/v1/threads
-GET    /wp-json/wplc-chat/v1/threads/{id}/messages
-POST   /wp-json/wplc-chat/v1/threads
-POST   /wp-json/wplc-chat/v1/threads/{id}/messages
-PUT    /wp-json/wplc-chat/v1/messages/{id}
-DELETE /wp-json/wplc-chat/v1/messages/{id}
+GET    /wp-json/chatpulse-chat/v1/threads
+GET    /wp-json/chatpulse-chat/v1/threads/{id}/messages
+POST   /wp-json/chatpulse-chat/v1/threads
+POST   /wp-json/chatpulse-chat/v1/threads/{id}/messages
+PUT    /wp-json/chatpulse-chat/v1/messages/{id}
+DELETE /wp-json/chatpulse-chat/v1/messages/{id}
 ```
 
 ### Socket.IO Events
@@ -170,7 +170,7 @@ The complete WordPress Live Chat system is now fully implemented and ready for u
 - **Seamless WordPress integration** with user authentication
 - **Production-ready features** with error handling and monitoring
 
-You can now use the `[wpcl-chat]` shortcode on any WordPress page to embed the chat system, and users will have a fully functional real-time chat experience!
+You can now use the `[chatpulse-chat]` shortcode on any WordPress page to embed the chat system, and users will have a fully functional real-time chat experience!
 
 ## 🚀 Next Steps
 

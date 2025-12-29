@@ -1,23 +1,23 @@
 <?php
 
-namespace WPLCAPP\api;
+namespace Chatpulse\api;
 
 use WP_REST_Server;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class WPLCRestApiRoutes
+class ChatpulseRestApiRoutes
 {
 
     /**
-     * @var WPLCRestApiRoutes
+     * @var ChatpulseRestApiRoutes
      */
     private static $instance;
 
     /**
      * API namespace
      */
-    private $namespace = 'wplc-chat/v1';
+    private $namespace = 'chatpulse-chat/v1';
 
     /**
      * Controller instance
@@ -29,8 +29,8 @@ class WPLCRestApiRoutes
      */
     public static function instance()
     {
-        if (!isset(self::$instance) && !(self::$instance instanceof WPLCRestApiRoutes)) {
-            self::$instance = new WPLCRestApiRoutes();
+        if (!isset(self::$instance) && !(self::$instance instanceof ChatpulseRestApiRoutes)) {
+            self::$instance = new ChatpulseRestApiRoutes();
         }
 
         return self::$instance;
@@ -41,7 +41,7 @@ class WPLCRestApiRoutes
      */
     public function init()
     {
-        $this->controller = WPLCRestApiController::instance();
+        $this->controller = ChatpulseRestApiController::instance();
         add_action('rest_api_init', array($this, 'register_routes'));
     }
 

@@ -4,7 +4,7 @@ import AdminSettings from './AdminSettings';
 import './assets/global.css';
 
 // Mount the admin settings app
-const rootElement = document.getElementById('wplc-admin-settings-root');
+const rootElement = document.getElementById('chatpulse-admin-settings-root');
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>

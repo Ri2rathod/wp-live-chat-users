@@ -1,7 +1,7 @@
 {
   "name": "socket-server",
   "version": "1.0.0",
-  "description": "WebSocket server for WP Live Chat Users",
+  "description": "WebSocket server for Chatpulse",
   "module": "server.js",
   "type": "module",
   "private": true,

@@ -1,4 +1,4 @@
-# WP Live Chat Users
+# Chatpulse
 
 [![License: GPL-2.0+](https://img.shields.io/badge/License-GPL--2.0+-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![WordPress](https://img.shields.io/badge/WordPress-5.6+-blue.svg)](https://wordpress.org/)
@@ -88,14 +88,14 @@ A modern, real-time chat system for WordPress that enables user-to-user communic
 
 ```bash
 # Clone the repository
-git clone https://github.com/Ri2rathod/wp-live-chat-users.git
-cd wp-live-chat-users
+git clone https://github.com/Ri2rathod/chatpulse.git
+cd chatpulse
 
 # Install plugin in WordPress
-cp -r wp-plugin/ /path/to/wordpress/wp-content/plugins/wp-live-chat-users/
+cp -r wp-plugin/ /path/to/wordpress/wp-content/plugins/chatpulse/
 
 # Install PHP dependencies
-cd /path/to/wordpress/wp-content/plugins/wp-live-chat-users/
+cd /path/to/wordpress/wp-content/plugins/chatpulse/
 composer install
 ```
 
@@ -152,10 +152,10 @@ bun run dev
 1. **Activate the plugin** in WordPress admin
 2. **Run database migrations** via WP-CLI or admin interface:
    ```bash
-   wp wplc migrate:run --path=/path/to/wordpress
+   wp chatpulse migrate:run --path=/path/to/wordpress
    ```
 3. **Configure API settings** in WordPress admin:
-   - Go to `Settings > WPLC API`
+   - Go to `Settings > Chatpulse API`
    - Enable API access
    - Generate API key
    - Configure user permissions
@@ -167,7 +167,7 @@ Create `/socket-server/.env` file:
 ```env
 # WordPress Integration
 WP_BASE_URL=https://yoursite.com
-WP_API_NAMESPACE=wplc-chat/v1
+WP_API_NAMESPACE=chatpulse-chat/v1
 WP_API_KEY=your_generated_api_key_here
 WP_API_TIMEOUT=10000
 
@@ -190,7 +190,7 @@ SOCKET_PING_INTERVAL=25000
 
 1. **Add the chat interface** to any page/post using the shortcode:
    ```php
-   [wpcl-chat]
+   [chatpulse-chat]
    ```
 
 2. **Start conversations** by clicking the "New Chat" button
@@ -205,22 +205,22 @@ SOCKET_PING_INTERVAL=25000
 
 ```php
 // Get user threads
-GET /wp-json/wplc-chat/v1/threads
+GET /wp-json/chatpulse-chat/v1/threads
 
 // Create new thread
-POST /wp-json/wplc-chat/v1/threads
+POST /wp-json/chatpulse-chat/v1/threads
 
 // Get thread messages
-GET /wp-json/wplc-chat/v1/threads/{id}/messages
+GET /wp-json/chatpulse-chat/v1/threads/{id}/messages
 
 // Send message
-POST /wp-json/wplc-chat/v1/threads/{id}/messages
+POST /wp-json/chatpulse-chat/v1/threads/{id}/messages
 
 // Update typing status
-POST /wp-json/wplc-chat/v1/threads/{id}/typing
+POST /wp-json/chatpulse-chat/v1/threads/{id}/typing
 
 // Mark messages as read
-POST /wp-json/wplc-chat/v1/threads/{id}/read
+POST /wp-json/chatpulse-chat/v1/threads/{id}/read
 ```
 
 #### WebSocket Events
@@ -241,17 +241,17 @@ socket.on('user_joined', (user) => { /* handle */ });
 
 ```php
 // Customize user chat permissions
-add_filter('wplc_user_can_access_chat', function($can_access, $user, $request) {
+add_filter('chatpulse_user_can_access_chat', function($can_access, $user, $request) {
     return $user->has_cap('read'); // Customize logic
 }, 10, 3);
 
 // Modify thread access
-add_filter('wplc_user_can_access_thread', function($can_access, $user_id, $thread_id, $thread) {
+add_filter('chatpulse_user_can_access_thread', function($can_access, $user_id, $thread_id, $thread) {
     return true; // Customize access logic
 }, 10, 4);
 
 // Chat message sent hook
-add_action('wplc_message_sent', function($message, $thread, $user) {
+add_action('chatpulse_message_sent', function($message, $thread, $user) {
     // Custom logic after message sent
 }, 10, 3);
 ```
@@ -262,28 +262,28 @@ add_action('wplc_message_sent', function($message, $thread, $user) {
 
 The plugin creates these database tables:
 
-- `wp_wplc_message_threads` - Chat thread storage
-- `wp_wplc_messages` - Individual messages
-- `wp_wplc_thread_participants` - Thread membership (future)
-- `wp_wplc_message_reactions` - Message reactions (future)
+- `wp_chatpulse_message_threads` - Chat thread storage
+- `wp_chatpulse_messages` - Individual messages
+- `wp_chatpulse_thread_participants` - Thread membership (future)
+- `wp_chatpulse_message_reactions` - Message reactions (future)
 
 ### CLI Commands
 
 ```bash
 # Run migrations
-wp wplc migrate:run
+wp chatpulse migrate:run
 
 # Rollback migrations
-wp wplc migrate:rollback
+wp chatpulse migrate:rollback
 
 # Check migration status
-wp wplc migrate:status
+wp chatpulse migrate:status
 
 # Generate API key
-wp wplc api:generate-key
+wp chatpulse api:generate-key
 
 # Test API connection
-wp wplc api:test
+wp chatpulse api:test
 ```
 
 ### Development Workflow
@@ -306,7 +306,7 @@ bun run dev
 
 ### Health Checks
 
-- **WordPress Health**: `GET /wp-json/wplc-chat/v1/health`
+- **WordPress Health**: `GET /wp-json/chatpulse-chat/v1/health`
 - **Socket.IO Health**: `GET http://localhost:3001/health`
 - **Server Stats**: `GET http://localhost:3001/stats`
 
@@ -398,9 +398,9 @@ This project is licensed under the GPL-2.0+ License - see the [LICENSE](LICENSE)
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/Ri2rathod/wp-live-chat-users/issues)
-- **Documentation**: [Wiki](https://github.com/Ri2rathod/wp-live-chat-users/wiki)
-- **Community**: [Discussions](https://github.com/Ri2rathod/wp-live-chat-users/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Ri2rathod/chatpulse/issues)
+- **Documentation**: [Wiki](https://github.com/Ri2rathod/chatpulse/wiki)
+- **Community**: [Discussions](https://github.com/Ri2rathod/chatpulse/discussions)
 
 ---
 
