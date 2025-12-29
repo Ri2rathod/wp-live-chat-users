@@ -469,7 +469,7 @@ export default function App() {
           <footer className="mt-16 pt-8 border-t border-border">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>© 2024 Chatpulse</span>
+                <span>© {new Date().getFullYear()} Chatpulse</span>
                 <Badge variant="secondary">GPL-2.0+</Badge>
               </div>
               <div className="flex items-center gap-4">
