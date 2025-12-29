@@ -1458,7 +1458,7 @@ class WPLCRestApiController
             $user2_id,
             $user1_id,
             $user2_id
-        ));
+        )); // phpcs:ignore   PluginCheck.Security.DirectDB.UnescapedDBParameter 
 
     }
 
@@ -1581,8 +1581,8 @@ class WPLCRestApiController
         if ($current_count >= $limit['count']) {
             return new WP_Error(
                 'rate_limit_exceeded',
-                /* translators: 1: maximum count, 2: action name, 3: period in seconds */
                 sprintf(
+                    /* translators: 1: maximum count, 2: action name, 3: period in seconds */
                     __('Rate limit exceeded. Maximum %1$d %2$s per %3$d seconds.', 'wp-live-chat-users'),
                     $limit['count'],
                     $action,
