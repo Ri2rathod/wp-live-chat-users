@@ -1,10 +1,10 @@
 <?php
 
-namespace Chatpulse\database\classes;
+namespace Threadwp\database\classes;
 
 defined('ABSPATH') or die('Something went wrong');
 
-abstract class ChatpulseAbstractMigration {
+abstract class ThreadwpAbstractMigration {
     /**
      * Get database collation.
      *

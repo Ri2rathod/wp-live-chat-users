@@ -1,12 +1,12 @@
 <?php
 
-namespace Chatpulse\database\CLI;
+namespace Threadwp\database\CLI;
 
-use Chatpulse\database\classes\ChatpulseMigrator;
+use Threadwp\database\classes\ThreadwpMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ChatpulseMigrate {
+class ThreadwpMigrate {
 
     /**
      * Run pending migrations
@@ -21,15 +21,15 @@ class ChatpulseMigrate {
      *
      * ## EXAMPLES
      *
-     *     wp chatpulse migrate
-     *     wp chatpulse migrate --rollback
-     *     wp chatpulse migrate --migration=CreateMessagesTable
+     *     wp threadwp migrate
+     *     wp threadwp migrate --rollback
+     *     wp threadwp migrate --migration=CreateMessagesTable
      *
      * @param array $args
      * @param array $assoc_args
      */
     public function __invoke($args, $assoc_args) {
-        $migrator = ChatpulseMigrator::instance();
+        $migrator = ThreadwpMigrator::instance();
         
         // Setup migrations table first
         $migrator->setup();
@@ -60,7 +60,7 @@ class ChatpulseMigrate {
      * Show migration status
      */
     private function show_status() {
-        $migrator = ChatpulseMigrator::instance();
+        $migrator = ThreadwpMigrator::instance();
         $status = $migrator->get_migrations_by_plugin();
         
         if (empty($status)) {

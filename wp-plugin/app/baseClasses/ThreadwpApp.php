@@ -1,35 +1,35 @@
 <?php
 
-namespace Chatpulse\baseClasses;
+namespace Threadwp\baseClasses;
 /**
  * The code that runs during plugin activation
  */
 defined('ABSPATH') or die('Something went wrong');
 
-use Chatpulse\database\ChatpulseDatabaseManager;
-use Chatpulse\admin\ChatpulseApiSettingsAdmin;
-use Chatpulse\api\ChatpulseRestApiController;
-use Chatpulse\baseClasses\ChatpulseShortcodeManager;
+use Threadwp\database\ThreadwpDatabaseManager;
+use Threadwp\admin\ThreadwpApiSettingsAdmin;
+use Threadwp\api\ThreadwpRestApiController;
+use Threadwp\baseClasses\ThreadwpShortcodeManager;
 
-final class ChatpulseApp
+final class ThreadwpApp
 {
     public function activate()
     {
         // Initialize database manager on activation
-        ChatpulseDatabaseManager::instance()->run_migrations();
+        ThreadwpDatabaseManager::instance()->run_migrations();
     }
     
     public function init()
     {
         // Initialize database manager
-        ChatpulseDatabaseManager::instance()->init();
+        ThreadwpDatabaseManager::instance()->init();
         
         // Initialize REST API
-        ChatpulseRestApiController::instance()->init();
+        ThreadwpRestApiController::instance()->init();
         
         // Initialize admin interface
         if (is_admin()) {
-            ChatpulseApiSettingsAdmin::instance()->init();
+            ThreadwpApiSettingsAdmin::instance()->init();
         }
 
         // Register shortcodes
@@ -38,11 +38,11 @@ final class ChatpulseApp
     public function register_shortcodes()
     {
         // Initialize the shortcode manager
-        $shortcode_manager = new ChatpulseShortcodeManager(CHATPULSE_DIR . 'static');
+        $shortcode_manager = new ThreadwpShortcodeManager(THREADWP_DIR . 'static');
         
         // Register a shortcode with Vite assets
         $shortcode_manager->register(
-            'chatpulse-chat',
+            'threadwp-chat',
             function ($atts, $content) {
                 $atts = shortcode_atts([
                     'title' => 'Default Title',
@@ -52,7 +52,7 @@ final class ChatpulseApp
                 ob_start();
                 $this->enqueue_chat_scripts();
                 ?>
-            <div class="chatpulse-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
+            <div class="threadwp-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
             </div>
             <?php
                 return ob_get_clean();
@@ -60,8 +60,8 @@ final class ChatpulseApp
             [
                 [
                     'entry' => 'app/resources/main.tsx',
-                    'handle' => 'chatpulse-chat',
-                    'dependencies' => ['chatpulse-chat-scripts'],
+                    'handle' => 'threadwp-chat',
+                    'dependencies' => ['threadwp-chat-scripts'],
                     'in_footer' => false,
                 ]
             ],
@@ -75,25 +75,25 @@ final class ChatpulseApp
     public function enqueue_chat_scripts()
     {
         // Register a dummy script handle for dependencies
-        wp_register_script('chatpulse-chat-scripts', '', [], CHATPULSE_VERSION, ['in_footer' => true]);
-        wp_enqueue_script('chatpulse-chat-scripts');
+        wp_register_script('threadwp-chat-scripts', '', [], THREADWP_VERSION, ['in_footer' => true]);
+        wp_enqueue_script('threadwp-chat-scripts');
 
         // Localize WordPress API settings
-        wp_localize_script('chatpulse-chat-scripts', 'wpApiSettings', array(
+        wp_localize_script('threadwp-chat-scripts', 'wpApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => $this->get_current_user_data()
         ));
 
         // Localize chat-specific settings
-        wp_localize_script('chatpulse-chat-scripts', 'chatpulseChatSettings', array(
+        wp_localize_script('threadwp-chat-scripts', 'threadwpChatSettings', array(
             'socketUrl' => $this->get_socket_server_url(),
-            'apiNamespace' => 'chatpulse-chat/v1',
+            'apiNamespace' => 'threadwp-chat/v1',
             'currentUser' => $this->get_current_user_data(),
             'settings' => array(
-                'enableTypingIndicators' => get_option('chatpulse_enable_typing_indicators', '1') === '1',
-                'enableReadReceipts' => get_option('chatpulse_enable_read_receipts', '1') === '1',
-                'enablePresenceStatus' => get_option('chatpulse_enable_presence_status', '1') === '1',
+                'enableTypingIndicators' => get_option('threadwp_enable_typing_indicators', '1') === '1',
+                'enableReadReceipts' => get_option('threadwp_enable_read_receipts', '1') === '1',
+                'enablePresenceStatus' => get_option('threadwp_enable_presence_status', '1') === '1',
                 'autoMarkAsRead' => true,
                 'maxMessageLength' => 10000,
                 'allowedFileTypes' => array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'),
@@ -130,16 +130,16 @@ final class ChatpulseApp
      */
     private function get_socket_server_url() {
         // Get from options or environment
-        $socket_url = get_option('chatpulse_socket_server_url', '');
+        $socket_url = get_option('threadwp_socket_server_url', '');
         
         if (empty($socket_url)) {
             // Fallback to environment variable or default
-            $socket_url = defined('Chatpulse_SOCKET_SERVER_URL') 
-                ? Chatpulse_SOCKET_SERVER_URL 
+            $socket_url = defined('Threadwp_SOCKET_SERVER_URL') 
+                ? Threadwp_SOCKET_SERVER_URL 
                 : 'http://localhost:3001';
         }
 
-        return apply_filters('chatpulse_socket_server_url', $socket_url);
+        return apply_filters('threadwp_socket_server_url', $socket_url);
     }
 
 }

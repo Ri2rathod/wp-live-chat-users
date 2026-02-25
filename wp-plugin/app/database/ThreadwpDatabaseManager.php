@@ -1,31 +1,31 @@
 <?php
 
-namespace Chatpulse\database;
+namespace Threadwp\database;
 
-use Chatpulse\database\classes\ChatpulseMigrator;
+use Threadwp\database\classes\ThreadwpMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ChatpulseDatabaseManager {
+class ThreadwpDatabaseManager {
 
     /**
-     * @var ChatpulseDatabaseManager
+     * @var ThreadwpDatabaseManager
      */
     private static $instance;
 
     /**
-     * @var ChatpulseMigrator
+     * @var ThreadwpMigrator
      */
     private $migrator;
 
     /**
      * Get singleton instance
      *
-     * @return ChatpulseDatabaseManager
+     * @return ThreadwpDatabaseManager
      */
     public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ChatpulseDatabaseManager ) ) {
-            self::$instance = new ChatpulseDatabaseManager();
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ThreadwpDatabaseManager ) ) {
+            self::$instance = new ThreadwpDatabaseManager();
         }
 
         return self::$instance;
@@ -35,7 +35,7 @@ class ChatpulseDatabaseManager {
      * Initialize the database manager
      */
     public function init() {
-        $this->migrator = ChatpulseMigrator::instance('chatpulse');
+        $this->migrator = ThreadwpMigrator::instance('threadwp');
         
         // Setup migrations table on plugin activation
         add_action('wp_loaded', array($this, 'setup_migrations_table'));
@@ -45,12 +45,12 @@ class ChatpulseDatabaseManager {
      * Setup the migrations table
      */
     public function setup_migrations_table() {
-        if (get_option('chatpulse_migrations_table_created', false)) {
+        if (get_option('threadwp_migrations_table_created', false)) {
             return;
         }
 
         $this->migrator->setup();
-        update_option('chatpulse_migrations_table_created', true);
+        update_option('threadwp_migrations_table_created', true);
     }
 
     /**
@@ -62,7 +62,7 @@ class ChatpulseDatabaseManager {
         $count = $this->migrator->run();
         
         if ($count > 0) {
-            error_log("[Chatpulse] Ran {$count} migrations successfully");
+            error_log("[Threadwp] Ran {$count} migrations successfully");
         }
     }
 
@@ -73,7 +73,7 @@ class ChatpulseDatabaseManager {
         $count = $this->migrator->run(null, true);
         
         if ($count > 0) {
-            error_log("[Chatpulse] Rolled back {$count} migrations successfully");
+            error_log("[Threadwp] Rolled back {$count} migrations successfully");
         }
     }
 

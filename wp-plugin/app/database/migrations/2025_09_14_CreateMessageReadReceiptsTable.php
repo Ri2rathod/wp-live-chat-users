@@ -1,15 +1,15 @@
 <?php
 
-namespace Chatpulse\database\migrations;
+namespace Threadwp\database\migrations;
 
-use Chatpulse\database\classes\ChatpulseAbstractMigration;
+use Threadwp\database\classes\ThreadwpAbstractMigration;
 
-class CreateMessageReadReceiptsTable extends ChatpulseAbstractMigration {
+class CreateMessageReadReceiptsTable extends ThreadwpAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'chatpulse_message_read_receipts';
+        $table_name = $wpdb->prefix . 'threadwp_message_read_receipts';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -25,22 +25,22 @@ class CreateMessageReadReceiptsTable extends ChatpulseAbstractMigration {
             KEY idx_user_id (user_id),
             KEY idx_delivered_at (delivered_at),
             KEY idx_read_at (read_at),
-            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}chatpulse_messages(id) ON DELETE CASCADE
+            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}threadwp_messages(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[Chatpulse Migration] Successfully created wp_chatpulse_message_read_receipts table");
+        error_log("[Threadwp Migration] Successfully created wp_threadwp_message_read_receipts table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'chatpulse_message_read_receipts';
+        $table_name = $wpdb->prefix . 'threadwp_message_read_receipts';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[Chatpulse Migration] Successfully dropped wp_chatpulse_message_read_receipts table");
+        error_log("[Threadwp Migration] Successfully dropped wp_threadwp_message_read_receipts table");
     }
 }

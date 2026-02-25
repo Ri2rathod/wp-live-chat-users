@@ -1,4 +1,4 @@
-=== Chatpulse ===
+=== Threadwp ===
 Contributors: ri2rathod
 Tags: chat, live chat, real-time, websocket, socket.io, messaging, user chat, private message
 Requires at least: 5.6
@@ -11,7 +11,7 @@ Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (
 
 == Description ==
 
-**Chatpulse** is a modern, high-performance real-time chat system for WordPress. It enables seamless user-to-user communication using WebSocket technology, providing a smooth and responsive experience similar to modern messaging apps.
+**Threadwp** is a modern, high-performance real-time chat system for WordPress. It enables seamless user-to-user communication using WebSocket technology, providing a smooth and responsive experience similar to modern messaging apps.
 
 Unlike traditional WordPress chat plugins that rely on frequent AJAX polling (which can strain your server), this plugin uses **Socket.IO** for true real-time bidirectional communication.
 
@@ -34,7 +34,7 @@ Unlike traditional WordPress chat plugins that rely on frequent AJAX polling (wh
 *   **Composer** (for managing PHP dependencies)
 
 === 1. Plugin Setup ===
-1.  Upload the `chatpulse` folder to your `/wp-content/plugins/` directory.
+1.  Upload the `threadwp` folder to your `/wp-content/plugins/` directory.
 2.  Navigate to the plugin directory and run `composer install` to install PHP dependencies.
 3.  Activate the plugin through the 'Plugins' menu in WordPress.
 
@@ -46,10 +46,10 @@ This plugin requires a companion Node.js server to handle real-time events.
 4.  Start the server: `npm start` (or `bun start`).
 
 === 3. Configuration ===
-1.  Go to **Settings > Chatpulse API** in your WordPress dashboard.
+1.  Go to **Settings > Threadwp API** in your WordPress dashboard.
 2.  Generate an API key and ensure it matches the one in your `socket-server/.env`.
-3.  Run database migrations via **Tools > Chatpulse Migrations** or via WP-CLI: `wp chatpulse migrate`.
-4.  Add the chat interface to any page using the shortcode: `[chatpulse-chat]`.
+3.  Run database migrations via **Tools > Threadwp Migrations** or via WP-CLI: `wp threadwp migrate`.
+4.  Add the chat interface to any page using the shortcode: `[threadwp-chat]`.
 
 == Frequently Asked Questions ==
 

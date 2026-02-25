@@ -1,35 +1,35 @@
 <?php
 
-namespace Chatpulse\api;
+namespace Threadwp\api;
 
 use WP_REST_Server;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
-use Chatpulse\database\ChatpulseDatabaseManager;
+use Threadwp\database\ThreadwpDatabaseManager;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ChatpulseRestApiController
+class ThreadwpRestApiController
 {
 
     /**
-     * @var ChatpulseRestApiController
+     * @var ThreadwpRestApiController
      */
     private static $instance;
 
     /**
      * API namespace
      */
-    private $namespace = 'chatpulse-chat/v1';
+    private $namespace = 'threadwp-chat/v1';
 
     /**
      * Get singleton instance
      */
     public static function instance()
     {
-        if (!isset(self::$instance) && !(self::$instance instanceof ChatpulseRestApiController)) {
-            self::$instance = new ChatpulseRestApiController();
+        if (!isset(self::$instance) && !(self::$instance instanceof ThreadwpRestApiController)) {
+            self::$instance = new ThreadwpRestApiController();
         }
 
         return self::$instance;
@@ -40,8 +40,8 @@ class ChatpulseRestApiController
      */
     public function init()
     {
-        // Routes are now handled by ChatpulseRestApiRoutes
-        ChatpulseRestApiRoutes::instance()->init();
+        // Routes are now handled by ThreadwpRestApiRoutes
+        ThreadwpRestApiRoutes::instance()->init();
     }
 
     /**
@@ -50,20 +50,20 @@ class ChatpulseRestApiController
     public function check_api_key_authentication(WP_REST_Request $request)
     {
         // Check if API access is enabled
-        if (!get_option('chatpulse_api_enabled', false)) {
+        if (!get_option('threadwp_api_enabled', false)) {
             return false;
         }
 
         // Check for API key in header or query parameter
-        $api_key = $request->get_header('X-Chatpulse-API-Key')
+        $api_key = $request->get_header('X-Threadwp-API-Key')
             ?? $request->get_param('api_key');
 
         if (!empty($api_key)) {
-            $valid_api_key = get_option('chatpulse_api_key', '');
+            $valid_api_key = get_option('threadwp_api_key', '');
 
             if (!empty($valid_api_key) && hash_equals($valid_api_key, $api_key)) {
                 // Set a pseudo user for API access (use admin user or create a system user)
-                $api_user_id = get_option('chatpulse_api_user_id', 1); // Default to admin
+                $api_user_id = get_option('threadwp_api_user_id', 1); // Default to admin
                 wp_set_current_user($api_user_id);
                 return true;
             }
@@ -86,7 +86,7 @@ class ChatpulseRestApiController
         if (!is_user_logged_in()) {
             return new WP_Error(
                 'rest_not_logged_in',
-                __('You are not currently logged in.', 'chatpulse'),
+                __('You are not currently logged in.', 'threadwp'),
                 array('status' => 401)
             );
         }
@@ -97,18 +97,18 @@ class ChatpulseRestApiController
         if (!user_can($current_user, 'read')) {
             return new WP_Error(
                 'rest_cannot_access_chat',
-                __('Sorry, you are not allowed to access the chat.', 'chatpulse'),
+                __('Sorry, you are not allowed to access the chat.', 'threadwp'),
                 array('status' => 403)
             );
         }
 
         // Additional permission filters
-        $has_permission = apply_filters('chatpulse_user_can_access_chat', true, $current_user, $request);
+        $has_permission = apply_filters('threadwp_user_can_access_chat', true, $current_user, $request);
 
         if (!$has_permission) {
             return new WP_Error(
                 'rest_chat_access_denied',
-                __('Access to chat is denied.', 'chatpulse'),
+                __('Access to chat is denied.', 'threadwp'),
                 array('status' => 403)
             );
         }
@@ -138,7 +138,7 @@ class ChatpulseRestApiController
         if (!$this->user_can_access_thread($current_user_id, $thread_id)) {
             return new WP_Error(
                 'rest_cannot_access_thread',
-                __('Sorry, you are not allowed to access this thread.', 'chatpulse'),
+                __('Sorry, you are not allowed to access this thread.', 'threadwp'),
                 array('status' => 403)
             );
         }
@@ -153,8 +153,8 @@ class ChatpulseRestApiController
     {
         global $wpdb;
 
-        $thread_table = $wpdb->prefix . 'chatpulse_message_threads';
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $thread_table = $wpdb->prefix . 'threadwp_message_threads';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
 
         $sql = $wpdb->prepare(
             "
@@ -198,13 +198,13 @@ class ChatpulseRestApiController
         $file = $files['file'];
 
         // Check file size (default 10MB)
-        $max_size = apply_filters('chatpulse_max_file_size', 10 * 1024 * 1024);
+        $max_size = apply_filters('threadwp_max_file_size', 10 * 1024 * 1024);
         if ($file['size'] > $max_size) {
             return false;
         }
 
         // Check allowed file types
-        $allowed_types = apply_filters('chatpulse_allowed_file_types', array(
+        $allowed_types = apply_filters('threadwp_allowed_file_types', array(
             'jpg',
             'jpeg',
             'png',
@@ -233,7 +233,7 @@ class ChatpulseRestApiController
         if (!$user_id) {
             return new WP_Error(
                 'rest_not_logged_in',
-                __('You are not currently logged in.', 'chatpulse'),
+                __('You are not currently logged in.', 'threadwp'),
                 array('status' => 401)
             );
         }
@@ -271,10 +271,10 @@ class ChatpulseRestApiController
         $offset = ($page - 1) * $per_page;
 
         // Get escaped table names
-        $threads_table = esc_sql($wpdb->prefix . 'chatpulse_message_threads');
-        $messages_table = esc_sql($wpdb->prefix . 'chatpulse_messages');
-        $participants_table = esc_sql($wpdb->prefix . 'chatpulse_message_participants');
-        $read_receipts_table = esc_sql($wpdb->prefix . 'chatpulse_message_read_receipts');
+        $threads_table = esc_sql($wpdb->prefix . 'threadwp_message_threads');
+        $messages_table = esc_sql($wpdb->prefix . 'threadwp_messages');
+        $participants_table = esc_sql($wpdb->prefix . 'threadwp_message_participants');
+        $read_receipts_table = esc_sql($wpdb->prefix . 'threadwp_message_read_receipts');
         $users_table = esc_sql($wpdb->users);
 
         // Build search query
@@ -372,7 +372,7 @@ class ChatpulseRestApiController
         if (empty($data['participants']) || !is_array($data['participants'])) {
             return new WP_Error(
                 'invalid_participants',
-                __('Participants must be provided as an array of user IDs.', 'chatpulse'),
+                __('Participants must be provided as an array of user IDs.', 'threadwp'),
                 array('status' => 400)
             );
         }
@@ -387,7 +387,7 @@ class ChatpulseRestApiController
                 return new WP_Error(
                     'invalid_participant',
                     /* translators: %d: participant ID */
-                    sprintf(__('Invalid participant ID: %d', 'chatpulse'), $participant_id),
+                    sprintf(__('Invalid participant ID: %d', 'threadwp'), $participant_id),
                     array('status' => 400)
                 );
             }
@@ -399,7 +399,7 @@ class ChatpulseRestApiController
             if (count($data['participants']) < 2) {
                 return new WP_Error(
                     'invalid_participants_count',
-                    __('Private chats must have exactly one other participant.', 'chatpulse'),
+                    __('Private chats must have exactly one other participant.', 'threadwp'),
                     array('status' => 400)
                 );
             }
@@ -410,7 +410,7 @@ class ChatpulseRestApiController
             if ($existing_thread) {
                 return new WP_REST_Response(array(
                     'thread' => $this->format_thread_response($existing_thread),
-                    'message' => __('Thread already exists.', 'chatpulse')
+                    'message' => __('Thread already exists.', 'threadwp')
                 ), 200);
             }
         } else {
@@ -418,13 +418,13 @@ class ChatpulseRestApiController
             if (count($data['participants']) < 1) {
                 return new WP_Error(
                     'invalid_participants_count',
-                    __('Group chats must have at least one participant.', 'chatpulse'),
+                    __('Group chats must have at least one participant.', 'threadwp'),
                     array('status' => 400)
                 );
             }
         }
 
-        $threads_table = esc_sql($wpdb->prefix . 'chatpulse_message_threads');
+        $threads_table = esc_sql($wpdb->prefix . 'threadwp_message_threads');
 
         $insert_data = array(
             'type' => $data['type'],
@@ -439,7 +439,7 @@ class ChatpulseRestApiController
         if ($result === false) {
             return new WP_Error(
                 'thread_creation_failed',
-                __('Failed to create thread.', 'chatpulse'),
+                __('Failed to create thread.', 'threadwp'),
                 array('status' => 500)
             );
         }
@@ -447,7 +447,7 @@ class ChatpulseRestApiController
         $thread_id = $wpdb->insert_id;
 
         // Add thread participants
-        $participants_table = esc_sql($wpdb->prefix . 'chatpulse_message_participants');
+        $participants_table = esc_sql($wpdb->prefix . 'threadwp_message_participants');
 
         // Add creator as owner
         $wpdb->insert($participants_table, array(
@@ -490,7 +490,7 @@ class ChatpulseRestApiController
                 return new WP_Error(
                     'participant_creation_failed',
                     /* translators: %d: participant ID */
-                    sprintf(__('Failed to add participant: %d', 'chatpulse'), $participant_id),
+                    sprintf(__('Failed to add participant: %d', 'threadwp'), $participant_id),
                     array('status' => 500)
                 );
             }
@@ -516,7 +516,7 @@ class ChatpulseRestApiController
 
         return new WP_REST_Response(array(
             'thread' => $formatted_thread,
-            'message' => __('Thread created successfully.', 'chatpulse')
+            'message' => __('Thread created successfully.', 'threadwp')
         ), 201);
     }
 
@@ -528,7 +528,7 @@ class ChatpulseRestApiController
         $thread_id = $request->get_param('thread_id');
 
         global $wpdb;
-        $participants_table = esc_sql($wpdb->prefix . 'chatpulse_message_participants');
+        $participants_table = esc_sql($wpdb->prefix . 'threadwp_message_participants');
         $users_table = esc_sql($wpdb->users);
 
         $participants = $wpdb->get_results($wpdb->prepare(
@@ -566,13 +566,13 @@ class ChatpulseRestApiController
         if (!in_array($role, ['member', 'admin'])) {
             return new WP_Error(
                 'invalid_role',
-                __('Invalid participant role.', 'chatpulse'),
+                __('Invalid participant role.', 'threadwp'),
                 array('status' => 400)
             );
         }
 
         global $wpdb;
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
 
         // Check if already a participant
         $existing = $wpdb->get_var($wpdb->prepare(
@@ -584,7 +584,7 @@ class ChatpulseRestApiController
         if ($existing) {
             return new WP_Error(
                 'already_participant',
-                __('User is already a participant in this thread.', 'chatpulse'),
+                __('User is already a participant in this thread.', 'threadwp'),
                 array('status' => 400)
             );
         }
@@ -600,13 +600,13 @@ class ChatpulseRestApiController
         if ($result === false) {
             return new WP_Error(
                 'add_participant_failed',
-                __('Failed to add participant.', 'chatpulse'),
+                __('Failed to add participant.', 'threadwp'),
                 array('status' => 500)
             );
         }
 
         return new WP_REST_Response(array(
-            'message' => __('Participant added successfully.', 'chatpulse')
+            'message' => __('Participant added successfully.', 'threadwp')
         ), 201);
     }
 
@@ -623,13 +623,13 @@ class ChatpulseRestApiController
         if (!in_array($new_role, ['member', 'admin'])) {
             return new WP_Error(
                 'invalid_role',
-                __('Invalid participant role.', 'chatpulse'),
+                __('Invalid participant role.', 'threadwp'),
                 array('status' => 400)
             );
         }
 
         global $wpdb;
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
 
         // Cannot modify owner role
         $participant = $wpdb->get_row($wpdb->prepare(
@@ -641,7 +641,7 @@ class ChatpulseRestApiController
         if (!$participant) {
             return new WP_Error(
                 'participant_not_found',
-                __('Participant not found.', 'chatpulse'),
+                __('Participant not found.', 'threadwp'),
                 array('status' => 404)
             );
         }
@@ -649,7 +649,7 @@ class ChatpulseRestApiController
         if ($participant->role === 'owner') {
             return new WP_Error(
                 'cannot_modify_owner',
-                __('Cannot modify the owner role.', 'chatpulse'),
+                __('Cannot modify the owner role.', 'threadwp'),
                 array('status' => 400)
             );
         }
@@ -664,13 +664,13 @@ class ChatpulseRestApiController
         if ($result === false) {
             return new WP_Error(
                 'update_role_failed',
-                __('Failed to update participant role.', 'chatpulse'),
+                __('Failed to update participant role.', 'threadwp'),
                 array('status' => 500)
             );
         }
 
         return new WP_REST_Response(array(
-            'message' => __('Participant role updated successfully.', 'chatpulse')
+            'message' => __('Participant role updated successfully.', 'threadwp')
         ), 200);
     }
 
@@ -683,7 +683,7 @@ class ChatpulseRestApiController
         $user_id = $request->get_param('user_id');
 
         global $wpdb;
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
 
         // Cannot remove owner
         $participant = $wpdb->get_row($wpdb->prepare(
@@ -695,7 +695,7 @@ class ChatpulseRestApiController
         if (!$participant) {
             return new WP_Error(
                 'participant_not_found',
-                __('Participant not found.', 'chatpulse'),
+                __('Participant not found.', 'threadwp'),
                 array('status' => 404)
             );
         }
@@ -703,7 +703,7 @@ class ChatpulseRestApiController
         if ($participant->role === 'owner') {
             return new WP_Error(
                 'cannot_remove_owner',
-                __('Cannot remove the thread owner.', 'chatpulse'),
+                __('Cannot remove the thread owner.', 'threadwp'),
                 array('status' => 400)
             );
         }
@@ -717,13 +717,13 @@ class ChatpulseRestApiController
         if ($result === false) {
             return new WP_Error(
                 'remove_participant_failed',
-                __('Failed to remove participant.', 'chatpulse'),
+                __('Failed to remove participant.', 'threadwp'),
                 array('status' => 500)
             );
         }
 
         return new WP_REST_Response(array(
-            'message' => __('Participant removed successfully.', 'chatpulse')
+            'message' => __('Participant removed successfully.', 'threadwp')
         ), 200);
     }
 
@@ -739,9 +739,9 @@ class ChatpulseRestApiController
 
         global $wpdb;
 
-        $messages_table = esc_sql($wpdb->prefix . 'chatpulse_messages');
-        $attachments_table = esc_sql($wpdb->prefix . 'chatpulse_message_attachments');
-        $read_receipts_table = esc_sql($wpdb->prefix . 'chatpulse_message_read_receipts');
+        $messages_table = esc_sql($wpdb->prefix . 'threadwp_messages');
+        $attachments_table = esc_sql($wpdb->prefix . 'threadwp_message_attachments');
+        $read_receipts_table = esc_sql($wpdb->prefix . 'threadwp_message_read_receipts');
         $users_table = esc_sql($wpdb->users);
 
         // Build query
@@ -896,8 +896,8 @@ class ChatpulseRestApiController
 
         global $wpdb;
 
-        $messages_table = esc_sql($wpdb->prefix . 'chatpulse_messages');
-        $threads_table = esc_sql($wpdb->prefix . 'chatpulse_message_threads');
+        $messages_table = esc_sql($wpdb->prefix . 'threadwp_messages');
+        $threads_table = esc_sql($wpdb->prefix . 'threadwp_message_threads');
 
         // Insert message
         $message_data = array(
@@ -914,7 +914,7 @@ class ChatpulseRestApiController
         if ($result === false) {
             return new WP_Error(
                 'message_send_failed',
-                __('Failed to send message.', 'chatpulse'),
+                __('Failed to send message.', 'threadwp'),
                 array('status' => 500)
             );
         }
@@ -946,7 +946,7 @@ class ChatpulseRestApiController
 
         // Add attachments if any
         if (!empty($attachment_ids)) {
-            $attachments_table = $wpdb->prefix . 'chatpulse_message_attachments';
+            $attachments_table = $wpdb->prefix . 'threadwp_message_attachments';
             $attachments = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM `$attachments_table` WHERE message_id = %d",
                 $message_id
@@ -959,8 +959,8 @@ class ChatpulseRestApiController
         }
 
         // Create delivered receipts for all thread participants except sender
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
-        $read_receipts_table = $wpdb->prefix . 'chatpulse_message_read_receipts';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
+        $read_receipts_table = $wpdb->prefix . 'threadwp_message_read_receipts';
 
         $participants = $wpdb->get_results($wpdb->prepare(
             "SELECT user_id FROM `{$participants_table}` WHERE thread_id = %d AND user_id != %d",
@@ -980,7 +980,7 @@ class ChatpulseRestApiController
         }
 
         // Fire action for real-time notifications
-        do_action('chatpulse_message_sent', $message, $thread_id);
+        do_action('threadwp_message_sent', $message, $thread_id);
 
         // Send webhook to socket server for real-time updates
         $this->send_socket_webhook('message', array(
@@ -1017,7 +1017,7 @@ class ChatpulseRestApiController
         if (empty($files['file'])) {
             return new WP_Error(
                 'no_file',
-                __('No file was uploaded.', 'chatpulse'),
+                __('No file was uploaded.', 'threadwp'),
                 array('status' => 400)
             );
         }
@@ -1029,7 +1029,7 @@ class ChatpulseRestApiController
 
         $upload_overrides = array(
             'test_form' => false,
-            'mimes' => apply_filters('chatpulse_upload_mimes', array(
+            'mimes' => apply_filters('threadwp_upload_mimes', array(
                 'jpg|jpeg|jpe' => 'image/jpeg',
                 'gif' => 'image/gif',
                 'png' => 'image/png',
@@ -1046,7 +1046,7 @@ class ChatpulseRestApiController
         if ($movefile && !isset($movefile['error'])) {
             // Store attachment info in database
             global $wpdb;
-            $attachments_table = $wpdb->prefix . 'chatpulse_message_attachments';
+            $attachments_table = $wpdb->prefix . 'threadwp_message_attachments';
 
             $attachment_data = array(
                 'message_id' => 0, // Will be updated when attached to message
@@ -1064,7 +1064,7 @@ class ChatpulseRestApiController
                 wp_delete_file($movefile['file']);
                 return new WP_Error(
                     'attachment_save_failed',
-                    __('Failed to save attachment information.', 'chatpulse'),
+                    __('Failed to save attachment information.', 'threadwp'),
                     array('status' => 500)
                 );
             }
@@ -1082,7 +1082,7 @@ class ChatpulseRestApiController
         } else {
             return new WP_Error(
                 'upload_failed',
-                isset($movefile['error']) ? $movefile['error'] : __('File upload failed.', 'chatpulse'),
+                isset($movefile['error']) ? $movefile['error'] : __('File upload failed.', 'threadwp'),
                 array('status' => 500)
             );
         }
@@ -1108,7 +1108,7 @@ class ChatpulseRestApiController
         $is_typing = $request->get_param('is_typing');
 
         // Store typing status in transient (expires in 10 seconds)
-        $transient_key = "chatpulse_typing_{$thread_id}_{$user_id}";
+        $transient_key = "threadwp_typing_{$thread_id}_{$user_id}";
 
         if ($is_typing) {
             set_transient($transient_key, true, 10);
@@ -1117,7 +1117,7 @@ class ChatpulseRestApiController
         }
 
         // Fire action for real-time updates
-        do_action('chatpulse_typing_indicator', $thread_id, $user_id, $is_typing);
+        do_action('threadwp_typing_indicator', $thread_id, $user_id, $is_typing);
 
         return new WP_REST_Response(array(
             'success' => true,
@@ -1141,8 +1141,8 @@ class ChatpulseRestApiController
 
         global $wpdb;
 
-        $messages_table = $wpdb->prefix . 'chatpulse_messages';
-        $read_receipts_table = $wpdb->prefix . 'chatpulse_message_read_receipts';
+        $messages_table = $wpdb->prefix . 'threadwp_messages';
+        $read_receipts_table = $wpdb->prefix . 'threadwp_message_read_receipts';
 
         // If specific message_id provided, mark only that message
         // Otherwise mark all messages in thread as read
@@ -1217,7 +1217,7 @@ class ChatpulseRestApiController
     private function send_socket_webhook($endpoint, $data)
     {
         // Get socket server URL from settings
-        $socket_url = get_option('chatpulse_socket_server_url', 'http://localhost:3001');
+        $socket_url = get_option('threadwp_socket_server_url', 'http://localhost:3001');
 
         // Don't send if socket server is not configured
         if (empty($socket_url) || $socket_url === 'http://localhost:3001') {
@@ -1251,7 +1251,7 @@ class ChatpulseRestApiController
         global $wpdb;
 
         // Get participants for this thread
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
         $participants_query = "SELECT p.user_id, u.display_name, u.user_email
             FROM `{$participants_table}` p
             LEFT JOIN `{$wpdb->users}` u ON p.user_id = u.ID
@@ -1335,7 +1335,7 @@ class ChatpulseRestApiController
         if (!$current_user || !$current_user->ID) {
             return new WP_Error(
                 'rest_forbidden',
-                __('You must be logged in to access this endpoint.', 'chatpulse'),
+                __('You must be logged in to access this endpoint.', 'threadwp'),
                 array('status' => 401)
             );
         }
@@ -1377,7 +1377,7 @@ class ChatpulseRestApiController
         }
 
         // Get users who can access chat
-        $args = apply_filters('chatpulse_user_query_args', $args);
+        $args = apply_filters('threadwp_user_query_args', $args);
         $users = get_users($args);
 
         // Format the response
@@ -1403,7 +1403,7 @@ class ChatpulseRestApiController
             );
 
             // Allow plugins to modify user data
-            $user_data = apply_filters('chatpulse_user_response_data', $user_data, $user);
+            $user_data = apply_filters('threadwp_user_response_data', $user_data, $user);
 
             $formatted_users[] = $user_data;
         }
@@ -1433,8 +1433,8 @@ class ChatpulseRestApiController
     {
         global $wpdb;
 
-        $threads_table = $wpdb->prefix . 'chatpulse_message_threads';
-        $participants_table = $wpdb->prefix . 'chatpulse_message_participants';
+        $threads_table = $wpdb->prefix . 'threadwp_message_threads';
+        $participants_table = $wpdb->prefix . 'threadwp_message_participants';
 
         // Find threads where exactly these two users are participants
         return $wpdb->get_row($wpdb->prepare(
@@ -1469,7 +1469,7 @@ class ChatpulseRestApiController
     {
         global $wpdb;
 
-        $attachments_table = $wpdb->prefix . 'chatpulse_message_attachments';
+        $attachments_table = $wpdb->prefix . 'threadwp_message_attachments';
 
         foreach ($attachment_ids as $attachment_id) {
             $wpdb->update(
@@ -1492,7 +1492,7 @@ class ChatpulseRestApiController
         $typing_users = array();
 
         // Get all transients for this thread
-        $transient_prefix = "chatpulse_typing_{$thread_id}_";
+        $transient_prefix = "threadwp_typing_{$thread_id}_";
         $transients = $wpdb->get_results($wpdb->prepare(
             "SELECT option_name FROM `{$wpdb->options}` WHERE option_name LIKE %s",
             '_transient_' . $transient_prefix . '%'
@@ -1522,18 +1522,18 @@ class ChatpulseRestApiController
         if (empty(trim($content))) {
             return new WP_Error(
                 'empty_content',
-                __('Message content cannot be empty.', 'chatpulse'),
+                __('Message content cannot be empty.', 'threadwp'),
                 array('status' => 400)
             );
         }
 
         // Content length validation
-        $max_length = apply_filters('chatpulse_max_message_length', 10000);
+        $max_length = apply_filters('threadwp_max_message_length', 10000);
         if (strlen($content) > $max_length) {
             return new WP_Error(
                 'content_too_long',
                 /* translators: %d: maximum number of characters */
-                sprintf(__('Message content cannot exceed %d characters.', 'chatpulse'), $max_length),
+                sprintf(__('Message content cannot exceed %d characters.', 'threadwp'), $max_length),
                 array('status' => 400)
             );
         }
@@ -1544,7 +1544,7 @@ class ChatpulseRestApiController
             if (!preg_match('/^[\p{So}\p{Sk}]{1,5}$/u', $content)) {
                 return new WP_Error(
                     'invalid_reaction',
-                    __('Invalid reaction format.', 'chatpulse'),
+                    __('Invalid reaction format.', 'threadwp'),
                     array('status' => 400)
                 );
             }
@@ -1558,10 +1558,10 @@ class ChatpulseRestApiController
      */
     private function check_rate_limit($user_id, $action = 'message')
     {
-        $limit_key = "chatpulse_rate_limit_{$action}_{$user_id}";
+        $limit_key = "threadwp_rate_limit_{$action}_{$user_id}";
         $current_count = get_transient($limit_key);
 
-        $limits = apply_filters('chatpulse_rate_limits', array(
+        $limits = apply_filters('threadwp_rate_limits', array(
             'message' => array('count' => 60, 'period' => 60), // 60 messages per minute
             'upload' => array('count' => 10, 'period' => 60),  // 10 uploads per minute
             'typing' => array('count' => 30, 'period' => 60)   // 30 typing updates per minute
@@ -1583,7 +1583,7 @@ class ChatpulseRestApiController
                 'rate_limit_exceeded',
                 sprintf(
                     /* translators: 1: maximum count, 2: action name, 3: period in seconds */
-                    __('Rate limit exceeded. Maximum %1$d %2$s per %3$d seconds.', 'chatpulse'),
+                    __('Rate limit exceeded. Maximum %1$d %2$s per %3$d seconds.', 'threadwp'),
                     $limit['count'],
                     $action,
                     $limit['period']
@@ -1624,8 +1624,8 @@ class ChatpulseRestApiController
 
         global $wpdb;
 
-        $read_receipts_table = $wpdb->prefix . 'chatpulse_message_read_receipts';
-        $messages_table = $wpdb->prefix . 'chatpulse_messages';
+        $read_receipts_table = $wpdb->prefix . 'threadwp_message_read_receipts';
+        $messages_table = $wpdb->prefix . 'threadwp_messages';
 
         // First check if user has access to this message
         $message = $wpdb->get_row($wpdb->prepare(
@@ -1636,7 +1636,7 @@ class ChatpulseRestApiController
         if (!$message) {
             return new WP_Error(
                 'message_not_found',
-                __('Message not found.', 'chatpulse'),
+                __('Message not found.', 'threadwp'),
                 array('status' => 404)
             );
         }
@@ -1645,7 +1645,7 @@ class ChatpulseRestApiController
         if (!$this->user_can_access_thread($user_id, $message->thread_id)) {
             return new WP_Error(
                 'rest_cannot_access_thread',
-                __('Sorry, you are not allowed to access this thread.', 'chatpulse'),
+                __('Sorry, you are not allowed to access this thread.', 'threadwp'),
                 array('status' => 403)
             );
         }
@@ -1683,17 +1683,17 @@ class ChatpulseRestApiController
     public function get_admin_settings(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to access settings.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to access settings.', 'threadwp'), array('status' => 403));
         }
 
         return new WP_REST_Response(array(
-            'socketUrl' => get_option('chatpulse_socket_server_url', 'http://localhost:3001'),
-            'typingIndicators' => get_option('chatpulse_enable_typing_indicators', '1') === '1',
-            'readReceipts' => get_option('chatpulse_enable_read_receipts', '1') === '1',
-            'presenceStatus' => get_option('chatpulse_enable_presence_status', '1') === '1',
-            'apiKey' => get_option('chatpulse_api_key', ''),
-            'apiEnabled' => get_option('chatpulse_api_enabled', false),
-            'apiUser' => get_option('chatpulse_api_user_id', '1')
+            'socketUrl' => get_option('threadwp_socket_server_url', 'http://localhost:3001'),
+            'typingIndicators' => get_option('threadwp_enable_typing_indicators', '1') === '1',
+            'readReceipts' => get_option('threadwp_enable_read_receipts', '1') === '1',
+            'presenceStatus' => get_option('threadwp_enable_presence_status', '1') === '1',
+            'apiKey' => get_option('threadwp_api_key', ''),
+            'apiEnabled' => get_option('threadwp_api_enabled', false),
+            'apiUser' => get_option('threadwp_api_user_id', '1')
         ), 200);
     }
 
@@ -1703,25 +1703,25 @@ class ChatpulseRestApiController
     public function save_admin_settings(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to save settings.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to save settings.', 'threadwp'), array('status' => 403));
         }
 
         $data = $request->get_json_params();
 
-        update_option('chatpulse_socket_server_url', sanitize_url($data['socketUrl']));
-        update_option('chatpulse_enable_typing_indicators', $data['typingIndicators'] ? '1' : '0');
-        update_option('chatpulse_enable_read_receipts', $data['readReceipts'] ? '1' : '0');
-        update_option('chatpulse_enable_presence_status', $data['presenceStatus'] ? '1' : '0');
-        update_option('chatpulse_api_enabled', $data['apiEnabled']);
-        update_option('chatpulse_api_user_id', absint($data['apiUser']));
+        update_option('threadwp_socket_server_url', sanitize_url($data['socketUrl']));
+        update_option('threadwp_enable_typing_indicators', $data['typingIndicators'] ? '1' : '0');
+        update_option('threadwp_enable_read_receipts', $data['readReceipts'] ? '1' : '0');
+        update_option('threadwp_enable_presence_status', $data['presenceStatus'] ? '1' : '0');
+        update_option('threadwp_api_enabled', $data['apiEnabled']);
+        update_option('threadwp_api_user_id', absint($data['apiUser']));
 
         if (!empty($data['apiKey'])) {
-            update_option('chatpulse_api_key', sanitize_text_field($data['apiKey']));
+            update_option('threadwp_api_key', sanitize_text_field($data['apiKey']));
         }
 
         return new WP_REST_Response(array(
             'success' => true,
-            'message' => __('Settings saved successfully.', 'chatpulse')
+            'message' => __('Settings saved successfully.', 'threadwp')
         ), 200);
     }
 
@@ -1731,11 +1731,11 @@ class ChatpulseRestApiController
     public function generate_api_key(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to generate API keys.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to generate API keys.', 'threadwp'), array('status' => 403));
         }
 
-        $api_key = 'chatpulse_api_key_' . wp_generate_password(40, false, false);
-        update_option('chatpulse_api_key', $api_key);
+        $api_key = 'threadwp_api_key_' . wp_generate_password(40, false, false);
+        update_option('threadwp_api_key', $api_key);
 
         return new WP_REST_Response(array(
             'apiKey' => $api_key
@@ -1748,16 +1748,16 @@ class ChatpulseRestApiController
     public function get_migrations_status(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to view migrations.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to view migrations.', 'threadwp'), array('status' => 403));
         }
 
         global $wpdb;
         $tables = array(
-            'wp_chatpulse_message_threads' => 'create_message_threads_table',
-            'wp_chatpulse_messages' => 'create_messages_table',
-            'wp_chatpulse_message_attachments' => 'create_attachments_table',
-            'wp_chatpulse_message_read_receipts' => 'create_read_receipts_table',
-            'wp_chatpulse_message_participants' => 'create_message_participants_table'
+            'wp_threadwp_message_threads' => 'create_message_threads_table',
+            'wp_threadwp_messages' => 'create_messages_table',
+            'wp_threadwp_message_attachments' => 'create_attachments_table',
+            'wp_threadwp_message_read_receipts' => 'create_read_receipts_table',
+            'wp_threadwp_message_participants' => 'create_message_participants_table'
         );
 
         $migrations = array();
@@ -1781,16 +1781,16 @@ class ChatpulseRestApiController
     public function run_migrations(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to run migrations.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to run migrations.', 'threadwp'), array('status' => 403));
         }
 
         // Trigger migrations by running activation
 
-        ChatpulseDatabaseManager::instance()->run_migrations();
+        ThreadwpDatabaseManager::instance()->run_migrations();
 
         return new WP_REST_Response(array(
             'success' => true,
-            'message' => __('Migrations completed successfully.', 'chatpulse')
+            'message' => __('Migrations completed successfully.', 'threadwp')
         ), 200);
     }
 
@@ -1800,16 +1800,16 @@ class ChatpulseRestApiController
     public function rollback_migrations(WP_REST_Request $request)
     {
         if (!current_user_can('manage_options')) {
-            return new WP_Error('rest_forbidden', __('You do not have permission to rollback migrations.', 'chatpulse'), array('status' => 403));
+            return new WP_Error('rest_forbidden', __('You do not have permission to rollback migrations.', 'threadwp'), array('status' => 403));
         }
 
         // Trigger rollback
-        ChatpulseDatabaseManager::instance()->rollback_migrations();
-        do_action('chatpulse_rollback_migrations');
+        ThreadwpDatabaseManager::instance()->rollback_migrations();
+        do_action('threadwp_rollback_migrations');
 
         return new WP_REST_Response(array(
             'success' => true,
-            'message' => __('Migrations rolled back successfully.', 'chatpulse')
+            'message' => __('Migrations rolled back successfully.', 'threadwp')
         ), 200);
     }
 }

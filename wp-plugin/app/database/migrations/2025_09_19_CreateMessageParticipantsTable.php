@@ -1,15 +1,15 @@
 <?php
 
-namespace Chatpulse\database\migrations;
+namespace Threadwp\database\migrations;
 
-use Chatpulse\database\classes\ChatpulseAbstractMigration;
+use Threadwp\database\classes\ThreadwpAbstractMigration;
 
-class CreateMessageParticipantsTable extends ChatpulseAbstractMigration {
+class CreateMessageParticipantsTable extends ThreadwpAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'chatpulse_message_participants';
+        $table_name = $wpdb->prefix . 'threadwp_message_participants';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -22,22 +22,22 @@ class CreateMessageParticipantsTable extends ChatpulseAbstractMigration {
             UNIQUE KEY idx_thread_user (thread_id, user_id),
             KEY idx_thread_id (thread_id),
             KEY idx_user_id (user_id),
-            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}chatpulse_message_threads(id) ON DELETE CASCADE
+            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}threadwp_message_threads(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[Chatpulse Migration] Successfully created wp_chatpulse_message_participants table");
+        error_log("[Threadwp Migration] Successfully created wp_threadwp_message_participants table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'chatpulse_message_participants';
+        $table_name = $wpdb->prefix . 'threadwp_message_participants';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[Chatpulse Migration] Successfully dropped wp_chatpulse_message_participants table");
+        error_log("[Threadwp Migration] Successfully dropped wp_threadwp_message_participants table");
     }
 }

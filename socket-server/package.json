@@ -1,7 +1,7 @@
 {
   "name": "socket-server",
   "version": "1.0.0",
-  "description": "WebSocket server for Chatpulse",
+  "description": "WebSocket server for Threadwp",
   "module": "server.js",
   "type": "module",
   "private": true,

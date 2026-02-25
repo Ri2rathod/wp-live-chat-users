@@ -1,23 +1,23 @@
 <?php
 
-namespace Chatpulse\api;
+namespace Threadwp\api;
 
 use WP_REST_Server;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ChatpulseRestApiRoutes
+class ThreadwpRestApiRoutes
 {
 
     /**
-     * @var ChatpulseRestApiRoutes
+     * @var ThreadwpRestApiRoutes
      */
     private static $instance;
 
     /**
      * API namespace
      */
-    private $namespace = 'chatpulse-chat/v1';
+    private $namespace = 'threadwp-chat/v1';
 
     /**
      * Controller instance
@@ -29,8 +29,8 @@ class ChatpulseRestApiRoutes
      */
     public static function instance()
     {
-        if (!isset(self::$instance) && !(self::$instance instanceof ChatpulseRestApiRoutes)) {
-            self::$instance = new ChatpulseRestApiRoutes();
+        if (!isset(self::$instance) && !(self::$instance instanceof ThreadwpRestApiRoutes)) {
+            self::$instance = new ThreadwpRestApiRoutes();
         }
 
         return self::$instance;
@@ -41,7 +41,7 @@ class ChatpulseRestApiRoutes
      */
     public function init()
     {
-        $this->controller = ChatpulseRestApiController::instance();
+        $this->controller = ThreadwpRestApiController::instance();
         add_action('rest_api_init', array($this, 'register_routes'));
     }
 
