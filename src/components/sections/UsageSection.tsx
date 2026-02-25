@@ -3,25 +3,25 @@ import { CodeBlock } from '../CodeBlock';
 import { Users, Code, Smartphone } from 'lucide-react';
 
 export function UsageSection() {
-  const shortcodeExample = `[chatpulse-chat]`;
+  const shortcodeExample = `[threadwp-chat]`;
 
   const restApiExamples = `// Get user threads
-GET /wp-json/chatpulse-chat/v1/threads
+GET /wp-json/threadwp-chat/v1/threads
 
 // Create new thread
-POST /wp-json/chatpulse-chat/v1/threads
+POST /wp-json/threadwp-chat/v1/threads
 
 // Get thread messages
-GET /wp-json/chatpulse-chat/v1/threads/{id}/messages
+GET /wp-json/threadwp-chat/v1/threads/{id}/messages
 
 // Send message
-POST /wp-json/chatpulse-chat/v1/threads/{id}/messages
+POST /wp-json/threadwp-chat/v1/threads/{id}/messages
 
 // Update typing status
-POST /wp-json/chatpulse-chat/v1/threads/{id}/typing
+POST /wp-json/threadwp-chat/v1/threads/{id}/typing
 
 // Mark messages as read
-POST /wp-json/chatpulse-chat/v1/threads/{id}/read`;
+POST /wp-json/threadwp-chat/v1/threads/{id}/read`;
 
   const socketEvents = `// Client to Server
 socket.emit('join_thread', { thread_id: 1 });
@@ -34,24 +34,24 @@ socket.on('typing_status', (status) => { /* handle */ });
 socket.on('user_joined', (user) => { /* handle */ });`;
 
   const hooksFilters = `// Customize user chat permissions
-add_filter('chatpulse_user_can_access_chat', function($can_access, $user, $request) {
+add_filter('threadwp_user_can_access_chat', function($can_access, $user, $request) {
     return $user->has_cap('read'); // Customize logic
 }, 10, 3);
 
 // Modify thread access
-add_filter('chatpulse_user_can_access_thread', function($can_access, $user_id, $thread_id, $thread) {
+add_filter('threadwp_user_can_access_thread', function($can_access, $user_id, $thread_id, $thread) {
     return true; // Customize access logic
 }, 10, 4);
 
 // Chat message sent hook
-add_action('chatpulse_message_sent', function($message, $thread, $user) {
+add_action('threadwp_message_sent', function($message, $thread, $user) {
     // Custom logic after message sent
 }, 10, 3);`;
 
   const customizationExample = `// Add custom CSS
 add_action('wp_head', function() {
     echo '<style>
-        .chatpulse-chat-container {
+        .threadwp-chat-container {
             --chat-primary-color: #your-color;
             --chat-border-radius: 12px;
         }
@@ -59,7 +59,7 @@ add_action('wp_head', function() {
 });
 
 // Customize user display name
-add_filter('chatpulse_user_display_name', function($display_name, $user) {
+add_filter('threadwp_user_display_name', function($display_name, $user) {
     return $user->display_name . ' (' . $user->user_login . ')';
 }, 10, 2);`;
 
@@ -68,7 +68,7 @@ add_filter('chatpulse_user_display_name', function($display_name, $user) {
       <div className="space-y-4">
         <h2 className="text-3xl font-bold">🚀 Usage</h2>
         <p className="text-lg text-muted-foreground">
-          Learn how to use Chatpulse in your WordPress site, from basic implementation to advanced customization.
+          Learn how to use Threadwp in your WordPress site, from basic implementation to advanced customization.
         </p>
       </div>
 
@@ -250,7 +250,7 @@ add_filter('chatpulse_user_display_name', function($display_name, $user) {
 {`// In your theme's functions.php
 function add_chat_to_pages() {
     if (is_user_logged_in()) {
-        echo do_shortcode('[chatpulse-chat]');
+        echo do_shortcode('[threadwp-chat]');
     }
 }
 add_action('wp_footer', 'add_chat_to_pages');`}
@@ -267,7 +267,7 @@ add_action('wp_footer', 'add_chat_to_pages');`}
 {`// Add chat to custom post type
 function add_chat_to_products($content) {
     if (is_singular('product')) {
-        $content .= do_shortcode('[chatpulse-chat]');
+        $content .= do_shortcode('[threadwp-chat]');
     }
     return $content;
 }

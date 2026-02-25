@@ -1,7 +1,7 @@
 
-  # Chatpulse Documentation
+  # Threadwp Documentation
 
-  This is the documentation site for Chatpulse.
+  This is the documentation site for Threadwp.
 
   ## Running the code
 

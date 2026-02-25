@@ -3,25 +3,25 @@ import { CodeBlock } from '../CodeBlock';
 import { Database, Terminal, GitBranch, TestTube } from 'lucide-react';
 
 export function DevelopmentSection() {
-  const schemaCode = `wp_chatpulse_message_threads    - Chat thread storage
-wp_chatpulse_messages           - Individual messages  
-wp_chatpulse_thread_participants - Thread membership (future)
-wp_chatpulse_message_reactions  - Message reactions (future)`;
+  const schemaCode = `wp_threadwp_message_threads    - Chat thread storage
+wp_threadwp_messages           - Individual messages  
+wp_threadwp_thread_participants - Thread membership (future)
+wp_threadwp_message_reactions  - Message reactions (future)`;
 
   const cliCommands = `# Run migrations
-wp chatpulse migrate:run
+wp threadwp migrate:run
 
 # Rollback migrations  
-wp chatpulse migrate:rollback
+wp threadwp migrate:rollback
 
 # Check migration status
-wp chatpulse migrate:status
+wp threadwp migrate:status
 
 # Generate API key
-wp chatpulse api:generate-key
+wp threadwp api:generate-key
 
 # Test API connection
-wp chatpulse api:test`;
+wp threadwp api:test`;
 
   const devWorkflow = `# Start WordPress development
 cd wp-plugin/
@@ -75,7 +75,7 @@ git commit -m "docs: update API documentation"`;
       <div className="space-y-4">
         <h2 className="text-3xl font-bold">🔧 Development</h2>
         <p className="text-lg text-muted-foreground">
-          Everything you need to know for contributing to and extending Chatpulse.
+          Everything you need to know for contributing to and extending Threadwp.
         </p>
       </div>
 

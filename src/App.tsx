@@ -48,7 +48,7 @@ chatService.on('message_received', (message) => {
 
   const webhookExample = `// Set up webhook endpoint
 add_action('rest_api_init', function() {
-  register_rest_route('chatpulse-chat/v1', '/webhook', [
+  register_rest_route('threadwp-chat/v1', '/webhook', [
     'methods' => 'POST',
     'callback' => 'handle_chat_webhook',
     'permission_callback' => 'verify_webhook_signature'
@@ -76,7 +76,7 @@ function handle_chat_webhook($request) {
       <div className="space-y-4">
         <h1>📚 API Reference</h1>
         <p className="text-lg text-muted-foreground">
-          Complete API documentation for integrating with Chatpulse.
+          Complete API documentation for integrating with Threadwp.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ Header always set X-XSS-Protection "1; mode=block"
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"`;
 
   const rateLimitingExample = `// Implement rate limiting
-add_filter('chatpulse_message_rate_limit', function($limit, $user_id) {
+add_filter('threadwp_message_rate_limit', function($limit, $user_id) {
   // Allow 60 messages per minute for regular users
   if (user_can($user_id, 'moderate_comments')) {
     return 120; // Higher limit for moderators
@@ -137,7 +137,7 @@ add_filter('chatpulse_message_rate_limit', function($limit, $user_id) {
           🔒 Security
         </h1>
         <p className="text-lg text-muted-foreground">
-          Security best practices and configuration for Chatpulse.
+          Security best practices and configuration for Threadwp.
         </p>
       </div>
 
@@ -280,7 +280,7 @@ server {
           🚀 Deployment
         </h1>
         <p className="text-lg text-muted-foreground">
-          Production deployment guide and best practices for Chatpulse.
+          Production deployment guide and best practices for Threadwp.
         </p>
       </div>
 
@@ -342,7 +342,7 @@ function ContributingSection() {
           🤝 Contributing
         </h1>
         <p className="text-lg text-muted-foreground">
-          We welcome contributions! Help make Chatpulse even better.
+          We welcome contributions! Help make Threadwp even better.
         </p>
       </div>
 
@@ -389,21 +389,21 @@ function ContributingSection() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full justify-start" asChild>
-                <a href="https://github.com/Ri2rathod/chatpulse/issues" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/Ri2rathod/threadwp/issues" target="_blank" rel="noopener noreferrer">
                   <Github className="h-4 w-4 mr-2" />
                   View Open Issues
                   <ExternalLink className="h-3 w-3 ml-auto" />
                 </a>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="https://github.com/Ri2rathod/chatpulse/discussions" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/Ri2rathod/threadwp/discussions" target="_blank" rel="noopener noreferrer">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Join Discussions
                   <ExternalLink className="h-3 w-3 ml-auto" />
                 </a>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="https://github.com/Ri2rathod/chatpulse/wiki" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/Ri2rathod/threadwp/wiki" target="_blank" rel="noopener noreferrer">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Read Contributing Guide
                   <ExternalLink className="h-3 w-3 ml-auto" />
@@ -469,18 +469,18 @@ export default function App() {
           <footer className="mt-16 pt-8 border-t border-border">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>© {new Date().getFullYear()} Chatpulse</span>
+                <span>© {new Date().getFullYear()} Threadwp</span>
                 <Badge variant="secondary">GPL-2.0+</Badge>
               </div>
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
-                  <a href="https://github.com/Ri2rathod/chatpulse" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/Ri2rathod/threadwp" target="_blank" rel="noopener noreferrer">
                     <Github className="h-4 w-4 mr-2" />
                     GitHub
                   </a>
                 </Button>
                 <Button variant="ghost" size="sm" asChild>
-                  <a href="https://github.com/Ri2rathod/chatpulse/issues" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/Ri2rathod/threadwp/issues" target="_blank" rel="noopener noreferrer">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Support
                   </a>

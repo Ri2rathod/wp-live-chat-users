@@ -1,63 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="https://ri2rathod.github.io/chatpulse/wp-sitemap.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="https://ri2rathod.github.io/threadwp/wp-sitemap.xsl" ?>
 
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/</loc>
+    <loc>https://ri2rathod.github.io/threadwp/</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.00</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/features</loc>
+    <loc>https://ri2rathod.github.io/threadwp/features</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/architecture</loc>
+    <loc>https://ri2rathod.github.io/threadwp/architecture</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/installation</loc>
+    <loc>https://ri2rathod.github.io/threadwp/installation</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/usage</loc>
+    <loc>https://ri2rathod.github.io/threadwp/usage</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/development</loc>
+    <loc>https://ri2rathod.github.io/threadwp/development</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/api</loc>
+    <loc>https://ri2rathod.github.io/threadwp/api</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/security</loc>
+    <loc>https://ri2rathod.github.io/threadwp/security</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/deployment</loc>
+    <loc>https://ri2rathod.github.io/threadwp/deployment</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://ri2rathod.github.io/chatpulse/contributing</loc>
+    <loc>https://ri2rathod.github.io/threadwp/contributing</loc>
     <lastmod>2025-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>

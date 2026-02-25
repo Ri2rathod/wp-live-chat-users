@@ -57,7 +57,7 @@ const navigationItems = [
 ### 4. **Updated main.tsx**
 - Imported `BrowserRouter` from React Router
 - Wrapped `<App />` with `<BrowserRouter>` component
-- Added `basename="/chatpulse"` to handle GitHub Pages base path
+- Added `basename="/threadwp"` to handle GitHub Pages base path
 - Added GitHub Pages SPA redirect handling (for 404.html redirect)
 
 ### 5. **Created 404.html**
@@ -78,20 +78,20 @@ const navigationItems = [
 
 ## URLs
 
-- **Home/Overview**: `/chatpulse/`
-- **Features**: `/chatpulse/features`
-- **Architecture**: `/chatpulse/architecture`
-- **Installation**: `/chatpulse/installation`
-- **Usage**: `/chatpulse/usage`
-- **Development**: `/chatpulse/development`
-- **API Reference**: `/chatpulse/api`
-- **Security**: `/chatpulse/security`
-- **Deployment**: `/chatpulse/deployment`
-- **Contributing**: `/chatpulse/contributing`
+- **Home/Overview**: `/threadwp/`
+- **Features**: `/threadwp/features`
+- **Architecture**: `/threadwp/architecture`
+- **Installation**: `/threadwp/installation`
+- **Usage**: `/threadwp/usage`
+- **Development**: `/threadwp/development`
+- **API Reference**: `/threadwp/api`
+- **Security**: `/threadwp/security`
+- **Deployment**: `/threadwp/deployment`
+- **Contributing**: `/threadwp/contributing`
 
 ## Testing
 
-1. **Development**: `bun run dev` - Server at http://localhost:3000/chatpulse/
+1. **Development**: `bun run dev` - Server at http://localhost:3000/threadwp/
 2. **Production Build**: `bun run build` - Generates static HTML with prerendering
 3. **Preview**: `bun run preview` - Test production build locally
 
