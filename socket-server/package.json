@@ -1,7 +1,7 @@
 {
   "name": "socket-server",
   "version": "1.0.0",
-  "description": "WebSocket server for Threadwp",
+  "description": "WebSocket server for Threadnest",
   "module": "server.js",
   "type": "module",
   "private": true,

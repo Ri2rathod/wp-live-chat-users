@@ -1,0 +1,216 @@
+# Copyright (C) 2026 Rathod Ritesh
+# This file is distributed under the GPL-2.0+.
+msgid ""
+msgstr ""
+"Project-Id-Version: Threadnest 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wp-plugin\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-02-25T16:03:04+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: threadnest\n"
+
+#. Plugin Name of the plugin
+#: threadnest.php
+msgid "Threadnest"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: threadnest.php
+msgid "https://github.com/Ri2rathod/threadnest"
+msgstr ""
+
+#. Description of the plugin
+#: threadnest.php
+msgid "Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server."
+msgstr ""
+
+#. Author of the plugin
+#: threadnest.php
+msgid "Rathod Ritesh"
+msgstr ""
+
+#. Author URI of the plugin
+#: threadnest.php
+msgid "https://github.com/Ri2rathod"
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:89
+#: app/api/ThreadnestRestApiController.php:236
+msgid "You are not currently logged in."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:100
+msgid "Sorry, you are not allowed to access the chat."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:111
+msgid "Access to chat is denied."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:141
+#: app/api/ThreadnestRestApiController.php:1648
+msgid "Sorry, you are not allowed to access this thread."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:375
+msgid "Participants must be provided as an array of user IDs."
+msgstr ""
+
+#. translators: %d: participant ID
+#: app/api/ThreadnestRestApiController.php:390
+msgid "Invalid participant ID: %d"
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:402
+msgid "Private chats must have exactly one other participant."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:413
+msgid "Thread already exists."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:421
+msgid "Group chats must have at least one participant."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:442
+msgid "Failed to create thread."
+msgstr ""
+
+#. translators: %d: participant ID
+#: app/api/ThreadnestRestApiController.php:493
+msgid "Failed to add participant: %d"
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:519
+msgid "Thread created successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:569
+#: app/api/ThreadnestRestApiController.php:626
+msgid "Invalid participant role."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:587
+msgid "User is already a participant in this thread."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:603
+msgid "Failed to add participant."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:609
+msgid "Participant added successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:644
+#: app/api/ThreadnestRestApiController.php:698
+msgid "Participant not found."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:652
+msgid "Cannot modify the owner role."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:667
+msgid "Failed to update participant role."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:673
+msgid "Participant role updated successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:706
+msgid "Cannot remove the thread owner."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:720
+msgid "Failed to remove participant."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:726
+msgid "Participant removed successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:917
+msgid "Failed to send message."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1020
+msgid "No file was uploaded."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1067
+msgid "Failed to save attachment information."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1085
+msgid "File upload failed."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1338
+msgid "You must be logged in to access this endpoint."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1525
+msgid "Message content cannot be empty."
+msgstr ""
+
+#. translators: %d: maximum number of characters
+#: app/api/ThreadnestRestApiController.php:1536
+msgid "Message content cannot exceed %d characters."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1547
+msgid "Invalid reaction format."
+msgstr ""
+
+#. translators: 1: maximum count, 2: action name, 3: period in seconds
+#: app/api/ThreadnestRestApiController.php:1586
+msgid "Rate limit exceeded. Maximum %1$d %2$s per %3$d seconds."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1639
+msgid "Message not found."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1686
+msgid "You do not have permission to access settings."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1706
+msgid "You do not have permission to save settings."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1724
+msgid "Settings saved successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1734
+msgid "You do not have permission to generate API keys."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1751
+msgid "You do not have permission to view migrations."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1784
+msgid "You do not have permission to run migrations."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1793
+msgid "Migrations completed successfully."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1803
+msgid "You do not have permission to rollback migrations."
+msgstr ""
+
+#: app/api/ThreadnestRestApiController.php:1812
+msgid "Migrations rolled back successfully."
+msgstr ""

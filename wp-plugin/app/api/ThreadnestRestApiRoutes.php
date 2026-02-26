@@ -1,23 +1,23 @@
 <?php
 
-namespace Threadwp\api;
+namespace Threadnest\api;
 
 use WP_REST_Server;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ThreadwpRestApiRoutes
+class ThreadnestRestApiRoutes
 {
 
     /**
-     * @var ThreadwpRestApiRoutes
+     * @var ThreadnestRestApiRoutes
      */
     private static $instance;
 
     /**
      * API namespace
      */
-    private $namespace = 'threadwp-chat/v1';
+    private $namespace = 'threadnest-chat/v1';
 
     /**
      * Controller instance
@@ -29,8 +29,8 @@ class ThreadwpRestApiRoutes
      */
     public static function instance()
     {
-        if (!isset(self::$instance) && !(self::$instance instanceof ThreadwpRestApiRoutes)) {
-            self::$instance = new ThreadwpRestApiRoutes();
+        if (!isset(self::$instance) && !(self::$instance instanceof ThreadnestRestApiRoutes)) {
+            self::$instance = new ThreadnestRestApiRoutes();
         }
 
         return self::$instance;
@@ -41,7 +41,7 @@ class ThreadwpRestApiRoutes
      */
     public function init()
     {
-        $this->controller = ThreadwpRestApiController::instance();
+        $this->controller = ThreadnestRestApiController::instance();
         add_action('rest_api_init', array($this, 'register_routes'));
     }
 

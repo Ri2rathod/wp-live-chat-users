@@ -652,7 +652,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
         per_page: '100'
       });
       
-      const userList = await makeApiRequest(`threadwp-chat/v1/users?${searchParams.toString()}`);
+      const userList = await makeApiRequest(`threadnest-chat/v1/users?${searchParams.toString()}`);
       
       setUsers(userList.map((user: any) => ({
         id: user.id,

@@ -557,15 +557,15 @@ class ChatService {
   private getWpApiUrl(): string {
     // Get from WordPress localized script or fallback
     if (typeof window !== 'undefined' && (window as any).wpApiSettings) {
-      return (window as any).wpApiSettings.root + 'threadwp-chat/v1';
+      return (window as any).wpApiSettings.root + 'threadnest-chat/v1';
     }
-    return '/wp-json/threadwp-chat/v1';
+    return '/wp-json/threadnest-chat/v1';
   }
 
   private getSocketUrl(): string {
     // Get from WordPress localized script or fallback
-    if (typeof window !== 'undefined' && (window as any).threadwpChatSettings) {
-      return (window as any).threadwpChatSettings.socketUrl;
+    if (typeof window !== 'undefined' && (window as any).threadnestChatSettings) {
+      return (window as any).threadnestChatSettings.socketUrl;
     }
     return 'http://localhost:3001';
   }

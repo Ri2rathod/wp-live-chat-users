@@ -1,35 +1,35 @@
 <?php
 
-namespace Threadwp\baseClasses;
+namespace Threadnest\baseClasses;
 /**
  * The code that runs during plugin activation
  */
 defined('ABSPATH') or die('Something went wrong');
 
-use Threadwp\database\ThreadwpDatabaseManager;
-use Threadwp\admin\ThreadwpApiSettingsAdmin;
-use Threadwp\api\ThreadwpRestApiController;
-use Threadwp\baseClasses\ThreadwpShortcodeManager;
+use Threadnest\database\ThreadnestDatabaseManager;
+use Threadnest\admin\ThreadnestApiSettingsAdmin;
+use Threadnest\api\ThreadnestRestApiController;
+use Threadnest\baseClasses\ThreadnestShortcodeManager;
 
-final class ThreadwpApp
+final class ThreadnestApp
 {
     public function activate()
     {
         // Initialize database manager on activation
-        ThreadwpDatabaseManager::instance()->run_migrations();
+        ThreadnestDatabaseManager::instance()->run_migrations();
     }
     
     public function init()
     {
         // Initialize database manager
-        ThreadwpDatabaseManager::instance()->init();
+        ThreadnestDatabaseManager::instance()->init();
         
         // Initialize REST API
-        ThreadwpRestApiController::instance()->init();
+        ThreadnestRestApiController::instance()->init();
         
         // Initialize admin interface
         if (is_admin()) {
-            ThreadwpApiSettingsAdmin::instance()->init();
+            ThreadnestApiSettingsAdmin::instance()->init();
         }
 
         // Register shortcodes
@@ -38,11 +38,11 @@ final class ThreadwpApp
     public function register_shortcodes()
     {
         // Initialize the shortcode manager
-        $shortcode_manager = new ThreadwpShortcodeManager(THREADWP_DIR . 'static');
+        $shortcode_manager = new ThreadnestShortcodeManager(THREADNEST_DIR . 'static');
         
         // Register a shortcode with Vite assets
         $shortcode_manager->register(
-            'threadwp-chat',
+            'threadnest-chat',
             function ($atts, $content) {
                 $atts = shortcode_atts([
                     'title' => 'Default Title',
@@ -52,7 +52,7 @@ final class ThreadwpApp
                 ob_start();
                 $this->enqueue_chat_scripts();
                 ?>
-            <div class="threadwp-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
+            <div class="threadnest-chat" data-attr='<?php echo wp_json_encode($atts) ?>' >
             </div>
             <?php
                 return ob_get_clean();
@@ -60,8 +60,8 @@ final class ThreadwpApp
             [
                 [
                     'entry' => 'app/resources/main.tsx',
-                    'handle' => 'threadwp-chat',
-                    'dependencies' => ['threadwp-chat-scripts'],
+                    'handle' => 'threadnest-chat',
+                    'dependencies' => ['threadnest-chat-scripts'],
                     'in_footer' => false,
                 ]
             ],
@@ -75,25 +75,25 @@ final class ThreadwpApp
     public function enqueue_chat_scripts()
     {
         // Register a dummy script handle for dependencies
-        wp_register_script('threadwp-chat-scripts', '', [], THREADWP_VERSION, ['in_footer' => true]);
-        wp_enqueue_script('threadwp-chat-scripts');
+        wp_register_script('threadnest-chat-scripts', '', [], THREADNEST_VERSION, ['in_footer' => true]);
+        wp_enqueue_script('threadnest-chat-scripts');
 
         // Localize WordPress API settings
-        wp_localize_script('threadwp-chat-scripts', 'wpApiSettings', array(
+        wp_localize_script('threadnest-chat-scripts', 'wpApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => $this->get_current_user_data()
         ));
 
         // Localize chat-specific settings
-        wp_localize_script('threadwp-chat-scripts', 'threadwpChatSettings', array(
+        wp_localize_script('threadnest-chat-scripts', 'threadnestChatSettings', array(
             'socketUrl' => $this->get_socket_server_url(),
-            'apiNamespace' => 'threadwp-chat/v1',
+            'apiNamespace' => 'threadnest-chat/v1',
             'currentUser' => $this->get_current_user_data(),
             'settings' => array(
-                'enableTypingIndicators' => get_option('threadwp_enable_typing_indicators', '1') === '1',
-                'enableReadReceipts' => get_option('threadwp_enable_read_receipts', '1') === '1',
-                'enablePresenceStatus' => get_option('threadwp_enable_presence_status', '1') === '1',
+                'enableTypingIndicators' => get_option('threadnest_enable_typing_indicators', '1') === '1',
+                'enableReadReceipts' => get_option('threadnest_enable_read_receipts', '1') === '1',
+                'enablePresenceStatus' => get_option('threadnest_enable_presence_status', '1') === '1',
                 'autoMarkAsRead' => true,
                 'maxMessageLength' => 10000,
                 'allowedFileTypes' => array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'),
@@ -130,16 +130,16 @@ final class ThreadwpApp
      */
     private function get_socket_server_url() {
         // Get from options or environment
-        $socket_url = get_option('threadwp_socket_server_url', '');
+        $socket_url = get_option('threadnest_socket_server_url', '');
         
         if (empty($socket_url)) {
             // Fallback to environment variable or default
-            $socket_url = defined('Threadwp_SOCKET_SERVER_URL') 
-                ? Threadwp_SOCKET_SERVER_URL 
+            $socket_url = defined('Threadnest_SOCKET_SERVER_URL') 
+                ? Threadnest_SOCKET_SERVER_URL 
                 : 'http://localhost:3001';
         }
 
-        return apply_filters('threadwp_socket_server_url', $socket_url);
+        return apply_filters('threadnest_socket_server_url', $socket_url);
     }
 
 }

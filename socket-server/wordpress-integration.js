@@ -6,7 +6,7 @@ import fetch from 'node-fetch'; // You may need to install: npm install node-fet
 class WordPressIntegration {
   constructor(config = {}) {
     this.wpBaseUrl = config.wpBaseUrl || 'http://localhost/wp-json';
-    this.apiNamespace = config.apiNamespace || 'threadwp-chat/v1';
+    this.apiNamespace = config.apiNamespace || 'threadnest-chat/v1';
     this.apiKey = config.apiKey || null; // For application passwords
     this.timeout = config.timeout || 10000;
     
@@ -25,12 +25,12 @@ class WordPressIntegration {
   getHeaders(userId = null) {
     const headers = {
       'Content-Type': 'application/json',
-      'User-Agent': 'WP-Live-Chat-Socket-Server/1.0'
+      'User-Agent': 'Threadnest-Socket-Server/1.0'
     };
 
     // Add API key authentication if available
     if (this.apiKey) {
-      headers['X-Threadwp-API-Key'] = this.apiKey;
+      headers['X-threadnest-API-Key'] = this.apiKey;
     }
 
     // You could implement per-user JWT tokens here
@@ -519,8 +519,8 @@ class WordPressIntegration {
  */
 export function createWordPressIntegration() {
   const config = {
-    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp/threadwp/wp-json',
-    apiNamespace: process.env.WP_API_NAMESPACE || 'threadwp-chat/v1',
+    wpBaseUrl: process.env.WP_BASE_URL || 'http://localhost/wp/threadnest/wp-json',
+    apiNamespace: process.env.WP_API_NAMESPACE || 'threadnest-chat/v1',
     apiKey: process.env.WP_API_KEY || null,
     timeout: parseInt(process.env.WP_API_TIMEOUT || '10000')
   };

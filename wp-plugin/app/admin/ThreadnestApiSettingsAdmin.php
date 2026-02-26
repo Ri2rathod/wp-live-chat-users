@@ -1,13 +1,13 @@
 <?php
 
-namespace Threadwp\admin;
+namespace Threadnest\admin;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ThreadwpApiSettingsAdmin {
+class ThreadnestApiSettingsAdmin {
 
     /**
-     * @var ThreadwpApiSettingsAdmin
+     * @var ThreadnestApiSettingsAdmin
      */
     private static $instance;
 
@@ -15,8 +15,8 @@ class ThreadwpApiSettingsAdmin {
      * Get singleton instance
      */
     public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ThreadwpApiSettingsAdmin ) ) {
-            self::$instance = new ThreadwpApiSettingsAdmin();
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ThreadnestApiSettingsAdmin ) ) {
+            self::$instance = new ThreadnestApiSettingsAdmin();
         }
 
         return self::$instance;
@@ -34,10 +34,10 @@ class ThreadwpApiSettingsAdmin {
      */
     public function add_admin_menu() {
         add_options_page(
-            'Threadwp API Settings',
-            'Threadwp API', 
+            'Threadnest API Settings',
+            'Threadnest API', 
             'manage_options',
-            'threadwp-api-settings',
+            'threadnest-api-settings',
             array($this, 'render_admin_page')
         );
     }
@@ -50,7 +50,7 @@ class ThreadwpApiSettingsAdmin {
         $this->enqueue_admin_assets();
         
         ?>
-        <div id="threadwp-admin-settings-root"></div>
+        <div id="threadnest-admin-settings-root"></div>
         <?php
     }
 
@@ -60,17 +60,17 @@ class ThreadwpApiSettingsAdmin {
     private function enqueue_admin_assets() {
         // Use kucrut/vite-for-wp enqueue_asset function
         \Kucrut\Vite\enqueue_asset(
-            THREADWP_DIR . 'static',
+            THREADNEST_DIR . 'static',
             'app/resources/main-admin.tsx',
             [
-                'handle' => 'threadwp-admin-settings',
+                'handle' => 'threadnest-admin-settings',
                 'dependencies' => [],
                 'in-footer' => true,
             ]
         );
         
         // Localize WordPress API settings
-        wp_localize_script('threadwp-admin-settings', 'wpApiSettings', array(
+        wp_localize_script('threadnest-admin-settings', 'wpApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => array(

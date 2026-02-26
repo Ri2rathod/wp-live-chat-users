@@ -1,15 +1,15 @@
 <?php
 
-namespace Threadwp\database\migrations;
+namespace Threadnest\database\migrations;
 
-use Threadwp\database\classes\ThreadwpAbstractMigration;
+use Threadnest\database\classes\ThreadnestAbstractMigration;
 
-class CreateMessageThreadsTable extends ThreadwpAbstractMigration {
+class CreateMessageThreadsTable extends ThreadnestAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_message_threads';
+        $table_name = $wpdb->prefix . 'threadnest_message_threads';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -29,15 +29,15 @@ class CreateMessageThreadsTable extends ThreadwpAbstractMigration {
         dbDelta($sql);
 
         // Log success
-        error_log("[Threadwp Migration] Successfully created wp_threadwp_message_threads table");
+        error_log("[Threadnest Migration] Successfully created wp_threadnest_message_threads table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_message_threads';
+        $table_name = $wpdb->prefix . 'threadnest_message_threads';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[Threadwp Migration] Successfully dropped wp_threadwp_message_threads table");
+        error_log("[Threadnest Migration] Successfully dropped wp_threadnest_message_threads table");
     }
 }

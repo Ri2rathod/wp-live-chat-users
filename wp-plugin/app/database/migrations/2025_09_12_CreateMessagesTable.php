@@ -1,15 +1,15 @@
 <?php
 
-namespace Threadwp\database\migrations;
+namespace Threadnest\database\migrations;
 
-use Threadwp\database\classes\ThreadwpAbstractMigration;
+use Threadnest\database\classes\ThreadnestAbstractMigration;
 
-class CreateMessagesTable extends ThreadwpAbstractMigration {
+class CreateMessagesTable extends ThreadnestAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_messages';
+        $table_name = $wpdb->prefix . 'threadnest_messages';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -26,22 +26,22 @@ class CreateMessagesTable extends ThreadwpAbstractMigration {
             KEY idx_sender_id (sender_id),
             KEY idx_created_at (created_at),
             KEY idx_status (status),
-            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}threadwp_message_threads(id) ON DELETE CASCADE
+            FOREIGN KEY (thread_id) REFERENCES {$wpdb->prefix}threadnest_message_threads(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[Threadwp Migration] Successfully created wp_threadwp_messages table");
+        error_log("[Threadnest Migration] Successfully created wp_threadnest_messages table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_messages';
+        $table_name = $wpdb->prefix . 'threadnest_messages';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
 
-        error_log("[Threadwp Migration] Successfully dropped wp_threadwp_messages table");
+        error_log("[Threadnest Migration] Successfully dropped wp_threadnest_messages table");
     }
 }

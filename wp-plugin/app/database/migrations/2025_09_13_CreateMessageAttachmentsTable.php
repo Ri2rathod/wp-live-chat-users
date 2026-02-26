@@ -1,15 +1,15 @@
 <?php
 
-namespace Threadwp\database\migrations;
+namespace Threadnest\database\migrations;
 
-use Threadwp\database\classes\ThreadwpAbstractMigration;
+use Threadnest\database\classes\ThreadnestAbstractMigration;
 
-class CreateMessageAttachmentsTable extends ThreadwpAbstractMigration {
+class CreateMessageAttachmentsTable extends ThreadnestAbstractMigration {
 
     public function run() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_message_attachments';
+        $table_name = $wpdb->prefix . 'threadnest_message_attachments';
         $collation = $this->get_collation();
 
         $sql = "CREATE TABLE {$table_name} (
@@ -23,20 +23,20 @@ class CreateMessageAttachmentsTable extends ThreadwpAbstractMigration {
             PRIMARY KEY (id),
             KEY idx_message_id (message_id),
             KEY idx_mime_type (mime_type),
-            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}threadwp_messages(id) ON DELETE CASCADE
+            FOREIGN KEY (message_id) REFERENCES {$wpdb->prefix}threadnest_messages(id) ON DELETE CASCADE
         ) {$collation};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
 
         // Log success
-        error_log("[Threadwp Migration] Successfully created wp_threadwp_message_attachments table");
+        error_log("[Threadnest Migration] Successfully created wp_threadnest_message_attachments table");
     }
 
     public function rollback() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'threadwp_message_attachments';
+        $table_name = $wpdb->prefix . 'threadnest_message_attachments';
         $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `%s`", $table_name));
     }
 }

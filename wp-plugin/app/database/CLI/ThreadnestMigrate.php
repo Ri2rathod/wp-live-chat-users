@@ -1,12 +1,12 @@
 <?php
 
-namespace Threadwp\database\CLI;
+namespace Threadnest\database\CLI;
 
-use Threadwp\database\classes\ThreadwpMigrator;
+use Threadnest\database\classes\ThreadnestMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ThreadwpMigrate {
+class ThreadnestMigrate {
 
     /**
      * Run pending migrations
@@ -21,15 +21,15 @@ class ThreadwpMigrate {
      *
      * ## EXAMPLES
      *
-     *     wp threadwp migrate
-     *     wp threadwp migrate --rollback
-     *     wp threadwp migrate --migration=CreateMessagesTable
+     *     wp threadnest migrate
+     *     wp threadnest migrate --rollback
+     *     wp threadnest migrate --migration=CreateMessagesTable
      *
      * @param array $args
      * @param array $assoc_args
      */
     public function __invoke($args, $assoc_args) {
-        $migrator = ThreadwpMigrator::instance();
+        $migrator = ThreadnestMigrator::instance();
         
         // Setup migrations table first
         $migrator->setup();
@@ -60,7 +60,7 @@ class ThreadwpMigrate {
      * Show migration status
      */
     private function show_status() {
-        $migrator = ThreadwpMigrator::instance();
+        $migrator = ThreadnestMigrator::instance();
         $status = $migrator->get_migrations_by_plugin();
         
         if (empty($status)) {

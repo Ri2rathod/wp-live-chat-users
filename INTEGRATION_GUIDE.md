@@ -250,7 +250,7 @@ Response:
 
 ### WordPress Admin
 - Server status checker in Settings > Live Chat
-- Migration status in Tools > WP Live Chat
+- Migration status in Tools > Threadnest
 - Real-time connection monitoring
 
 ## 🚨 Troubleshooting

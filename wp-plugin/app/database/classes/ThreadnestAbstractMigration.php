@@ -1,10 +1,10 @@
 <?php
 
-namespace Threadwp\database\classes;
+namespace Threadnest\database\classes;
 
 defined('ABSPATH') or die('Something went wrong');
 
-abstract class ThreadwpAbstractMigration {
+abstract class ThreadnestAbstractMigration {
     /**
      * Get database collation.
      *

@@ -1,31 +1,31 @@
 <?php
 
-namespace Threadwp\database;
+namespace Threadnest\database;
 
-use Threadwp\database\classes\ThreadwpMigrator;
+use Threadnest\database\classes\ThreadnestMigrator;
 
 defined('ABSPATH') or die('Something went wrong');
 
-class ThreadwpDatabaseManager {
+class ThreadnestDatabaseManager {
 
     /**
-     * @var ThreadwpDatabaseManager
+     * @var ThreadnestDatabaseManager
      */
     private static $instance;
 
     /**
-     * @var ThreadwpMigrator
+     * @var ThreadnestMigrator
      */
     private $migrator;
 
     /**
      * Get singleton instance
      *
-     * @return ThreadwpDatabaseManager
+     * @return ThreadnestDatabaseManager
      */
     public static function instance() {
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ThreadwpDatabaseManager ) ) {
-            self::$instance = new ThreadwpDatabaseManager();
+        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof ThreadnestDatabaseManager ) ) {
+            self::$instance = new ThreadnestDatabaseManager();
         }
 
         return self::$instance;
@@ -35,7 +35,7 @@ class ThreadwpDatabaseManager {
      * Initialize the database manager
      */
     public function init() {
-        $this->migrator = ThreadwpMigrator::instance('threadwp');
+        $this->migrator = ThreadnestMigrator::instance('threadnest');
         
         // Setup migrations table on plugin activation
         add_action('wp_loaded', array($this, 'setup_migrations_table'));
@@ -45,12 +45,12 @@ class ThreadwpDatabaseManager {
      * Setup the migrations table
      */
     public function setup_migrations_table() {
-        if (get_option('threadwp_migrations_table_created', false)) {
+        if (get_option('threadnest_migrations_table_created', false)) {
             return;
         }
 
         $this->migrator->setup();
-        update_option('threadwp_migrations_table_created', true);
+        update_option('threadnest_migrations_table_created', true);
     }
 
     /**
@@ -62,7 +62,7 @@ class ThreadwpDatabaseManager {
         $count = $this->migrator->run();
         
         if ($count > 0) {
-            error_log("[Threadwp] Ran {$count} migrations successfully");
+            error_log("[Threadnest] Ran {$count} migrations successfully");
         }
     }
 
@@ -73,7 +73,7 @@ class ThreadwpDatabaseManager {
         $count = $this->migrator->run(null, true);
         
         if ($count > 0) {
-            error_log("[Threadwp] Rolled back {$count} migrations successfully");
+            error_log("[Threadnest] Rolled back {$count} migrations successfully");
         }
     }
 

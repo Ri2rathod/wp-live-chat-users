@@ -1,17 +1,17 @@
 <?php
 
-use Threadwp\baseClasses\ThreadwpApp;
+use Threadnest\baseClasses\ThreadnestApp;
 
 /**
- * Plugin Name: Threadwp
- * Plugin URI:  https://github.com/Ri2rathod/threadwp
+ * Plugin Name: Threadnest
+ * Plugin URI:  https://github.com/Ri2rathod/threadnest
  * Description: Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server.
  * Version:     0.1.0
  * Author:      Rathod Ritesh
  * Author URI:  https://github.com/Ri2rathod
  * License:     GPL-2.0+
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: threadwp
+ * Text Domain: threadnest
  * Domain Path: /languages
  */
 
@@ -24,15 +24,15 @@ require_once __DIR__ . '/vendor/autoload.php';
 /**
  * Define plugin constants
  */
-define( 'THREADWP_VERSION', '0.1.0' );
-define( 'THREADWP_DIR', plugin_dir_path( __FILE__ ) );
-define( 'THREADWP_URL', plugin_dir_url( __FILE__ ) );
-define('THREADWP_BASE_NAME', plugin_basename(__FILE__));
+define( 'THREADNEST_VERSION', '0.1.0' );
+define( 'THREADNEST_DIR', plugin_dir_path( __FILE__ ) );
+define( 'THREADNEST_URL', plugin_dir_url( __FILE__ ) );
+define('THREADNEST_BASE_NAME', plugin_basename(__FILE__));
 
-$threadwp_app = new ThreadwpApp();
+$threadnest_app = new ThreadnestApp();
 
 // Register activation hook
-register_activation_hook(__FILE__, [$threadwp_app, 'activate']);
+register_activation_hook(__FILE__, [$threadnest_app, 'activate']);
 
 // Initialize the plugin
-$threadwp_app->init();
+$threadnest_app->init();

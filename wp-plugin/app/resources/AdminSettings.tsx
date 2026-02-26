@@ -77,7 +77,7 @@ export default function AdminSettings() {
 
   // Helper to make API requests
   const makeApiRequest = async (endpoint: string, method = 'GET', data?: any) => {
-    const url = `${(window as any).wpApiSettings.root}threadwp-chat/v1/${endpoint}`;
+    const url = `${(window as any).wpApiSettings.root}threadnest-chat/v1/${endpoint}`;
     const options: RequestInit = {
       method,
       headers: {
@@ -236,7 +236,7 @@ export default function AdminSettings() {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <MessageSquare className="h-8 w-8 text-primary" />
-            WP Live Chat Settings
+            Threadnest Settings
           </h1>
           <p className="text-muted-foreground">
             Configure your live chat system, manage database migrations, and API settings
@@ -381,11 +381,11 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
-                    <div>• <code className="text-xs">wp_threadwp_message_threads</code> - Chat threads</div>
-                    <div>• <code className="text-xs">wp_threadwp_messages</code> - Individual messages</div>
-                    <div>• <code className="text-xs">wp_threadwp_message_attachments</code> - File attachments</div>
-                    <div>• <code className="text-xs">wp_threadwp_message_read_receipts</code> - Read receipts</div>
-                    <div>• <code className="text-xs">wp_threadwp_message_participants</code> - Thread participants</div>
+                    <div>• <code className="text-xs">wp_threadnest_message_threads</code> - Chat threads</div>
+                    <div>• <code className="text-xs">wp_threadnest_messages</code> - Individual messages</div>
+                    <div>• <code className="text-xs">wp_threadnest_message_attachments</code> - File attachments</div>
+                    <div>• <code className="text-xs">wp_threadnest_message_read_receipts</code> - Read receipts</div>
+                    <div>• <code className="text-xs">wp_threadnest_message_participants</code> - Thread participants</div>
                   </div>
                 </CardContent>
               </Card>
@@ -520,14 +520,14 @@ export default function AdminSettings() {
                 <Alert>
                   <Key className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>API Endpoint:</strong> {(window as any).wpApiSettings.root}threadwp-chat/v1/
+                    <strong>API Endpoint:</strong> {(window as any).wpApiSettings.root}threadnest-chat/v1/
                   </AlertDescription>
                 </Alert>
 
                 <div className="space-y-2">
                   <h4 className="font-semibold">Authentication Methods:</h4>
                   <div className="space-y-2 text-sm">
-                    <div>• <strong>Header:</strong> <code className="text-xs">X-Threadwp-API-Key: YOUR_API_KEY</code></div>
+                    <div>• <strong>Header:</strong> <code className="text-xs">X-Threadnest-API-Key: YOUR_API_KEY</code></div>
                     <div>• <strong>Query Parameter:</strong> <code className="text-xs">?api_key=YOUR_API_KEY</code></div>
                   </div>
                 </div>
