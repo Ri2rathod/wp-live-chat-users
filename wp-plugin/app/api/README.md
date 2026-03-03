@@ -102,7 +102,7 @@ fetch('/wp-json/threadnest-chat/v1/threads/123/messages', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-WP-Nonce': wpApiSettings.nonce
+    'X-WP-Nonce': threadnestApiSettings.nonce
   },
   body: JSON.stringify({
     content: 'Hello world!',

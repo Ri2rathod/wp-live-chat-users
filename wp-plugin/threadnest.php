@@ -4,12 +4,12 @@ use Threadnest\baseClasses\ThreadnestApp;
 
 /**
  * Plugin Name: Threadnest
- * Plugin URI:  https://github.com/Ri2rathod/threadnest
+ * Plugin URI:  https://wordpress.org/plugins/threadnest/
  * Description: Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server.
  * Version:     0.1.0
  * Author:      Rathod Ritesh
  * Author URI:  https://github.com/Ri2rathod
- * License:     GPL-2.0+
+ * License:     GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: threadnest
  * Domain Path: /languages

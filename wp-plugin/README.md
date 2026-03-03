@@ -1,6 +1,6 @@
 === Threadnest ===
 Contributors: ri2rathod
-Tags: chat, live chat, real-time, websocket, socket.io, messaging, user chat, private message
+Tags: chat, live chat, real-time, messaging, socket.io
 Requires at least: 5.6
 Tested up to: 6.9
 Stable tag: 0.1.0
@@ -50,6 +50,38 @@ This plugin requires a companion Node.js server to handle real-time events.
 2.  Generate an API key and ensure it matches the one in your `socket-server/.env`.
 3.  Run database migrations via **Tools > Threadnest Migrations** or via WP-CLI: `wp threadnest migrate`.
 4.  Add the chat interface to any page using the shortcode: `[threadnest-chat]`.
+
+== Build Tools and Source Code ==
+
+This plugin uses modern build tools to optimize production assets while maintaining transparent source code.
+
+=== Source Code Access ===
+*   **GitHub Repository**: https://github.com/Ri2rathod/threadnest
+*   All uncompiled source code is included in the plugin directory:
+    *   **PHP Source**: All `.php` files in the `app/` directory
+    *   **React/TypeScript Source**: All `.tsx` and `.ts` files in `app/resources/` and `app/resources/components/`
+    *   **Styles**: Source CSS files in `app/resources/assets/` and `app/resources/styles/`
+
+=== Build Process ===
+This plugin uses **Vite** and **TypeScript** for the frontend build process:
+
+1.  **Frontend Build**: React components are compiled from `app/resources/` using Vite (see `vite.config.ts`)
+2.  **Output**: Compiled assets are generated in `static/assets/` for distribution
+3.  **PHP Backend**: Uses Composer for dependency management (see `composer.json`)
+
+To rebuild from source:
+```
+cd wp-plugin
+npm install
+npm run build
+```
+
+=== Included Libraries ===
+All third-party libraries used are listed in:
+*   `package.json` - Frontend dependencies
+*   `composer.json` - Backend dependencies
+
+These dependencies are transparently documented with their licenses.
 
 == Frequently Asked Questions ==
 

@@ -79,7 +79,7 @@ final class ThreadnestApp
         wp_enqueue_script('threadnest-chat-scripts');
 
         // Localize WordPress API settings
-        wp_localize_script('threadnest-chat-scripts', 'wpApiSettings', array(
+        wp_localize_script('threadnest-chat-scripts', 'threadnestApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => $this->get_current_user_data()

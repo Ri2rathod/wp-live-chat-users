@@ -77,12 +77,12 @@ export default function AdminSettings() {
 
   // Helper to make API requests
   const makeApiRequest = async (endpoint: string, method = 'GET', data?: any) => {
-    const url = `${(window as any).wpApiSettings.root}threadnest-chat/v1/${endpoint}`;
+    const url = `${(window as any).threadnestApiSettings.root}threadnest-chat/v1/${endpoint}`;
     const options: RequestInit = {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': (window as any).wpApiSettings.nonce
+        'X-WP-Nonce': (window as any).threadnestApiSettings.nonce
       }
     };
 
@@ -520,7 +520,7 @@ export default function AdminSettings() {
                 <Alert>
                   <Key className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>API Endpoint:</strong> {(window as any).wpApiSettings.root}threadnest-chat/v1/
+                    <strong>API Endpoint:</strong> {(window as any).threadnestApiSettings.root}threadnest-chat/v1/
                   </AlertDescription>
                 </Alert>
 
@@ -536,7 +536,7 @@ export default function AdminSettings() {
                   <h4 className="font-semibold">Socket.IO Server Environment Variables:</h4>
                   <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
                     <div>WP_API_KEY={settings.apiKey}</div>
-                    <div>WP_BASE_URL={(window as any).wpApiSettings.root.replace('/wp-json/', '')}</div>
+                    <div>WP_BASE_URL={(window as any).threadnestApiSettings.root.replace('/wp-json/', '')}</div>
                   </div>
                 </div>
               </CardContent>

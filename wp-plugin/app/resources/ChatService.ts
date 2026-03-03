@@ -556,8 +556,8 @@ class ChatService {
 
   private getWpApiUrl(): string {
     // Get from WordPress localized script or fallback
-    if (typeof window !== 'undefined' && (window as any).wpApiSettings) {
-      return (window as any).wpApiSettings.root + 'threadnest-chat/v1';
+    if (typeof window !== 'undefined' && (window as any).threadnestApiSettings) {
+      return (window as any).threadnestApiSettings.root + 'threadnest-chat/v1';
     }
     return '/wp-json/threadnest-chat/v1';
   }
@@ -572,8 +572,8 @@ class ChatService {
 
   private getWpNonce(): string {
     // Get from WordPress localized script
-    if (typeof window !== 'undefined' && (window as any).wpApiSettings) {
-      return (window as any).wpApiSettings.nonce;
+    if (typeof window !== 'undefined' && (window as any).threadnestApiSettings) {
+      return (window as any).threadnestApiSettings.nonce;
     }
     return '';
   }

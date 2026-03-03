@@ -62,9 +62,9 @@ class ThreadnestRestApiController
             $valid_api_key = get_option('threadnest_api_key', '');
 
             if (!empty($valid_api_key) && hash_equals($valid_api_key, $api_key)) {
-                // Set a pseudo user for API access (use admin user or create a system user)
-                $api_user_id = get_option('threadnest_api_user_id', 1); // Default to admin
-                wp_set_current_user($api_user_id);
+                // API key is valid - the server endpoint already runs in a security context
+                // where the user making the request is authenticated server-to-server.
+                // No need to set current user - let WordPress handle authentication normally.
                 return true;
             }
         }

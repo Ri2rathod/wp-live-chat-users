@@ -70,7 +70,7 @@ class ThreadnestApiSettingsAdmin {
         );
         
         // Localize WordPress API settings
-        wp_localize_script('threadnest-admin-settings', 'wpApiSettings', array(
+        wp_localize_script('threadnest-admin-settings', 'threadnestApiSettings', array(
             'root' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('wp_rest'),
             'currentUser' => array(

@@ -122,7 +122,7 @@ const ChatApp: React.FC<ChatAppProps> = () => {
   const isAtBottomRef = useRef<boolean>(true);
 
   // Current user ID (get from WordPress API settings)
-  const currentUserId = (window as any).wpApiSettings?.currentUser?.id || 1;
+  const currentUserId = (window as any).threadnestApiSettings?.currentUser?.id || 1;
 
   // Helper function to convert thread to chat item
   const convertThreadToChatItem = useCallback((thread: ChatThread): ChatItem => {
@@ -609,13 +609,13 @@ const ChatApp: React.FC<ChatAppProps> = () => {
 
   // Helper function to make API requests
   const makeApiRequest = useCallback(async (endpoint: string, options: RequestInit = {}) => {
-    const url = `${(window as any).wpApiSettings.root}${endpoint}`;
+    const url = `${(window as any).threadnestApiSettings.root}${endpoint}`;
     
     const defaultOptions: RequestInit = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': (window as any).wpApiSettings.nonce
+        'X-WP-Nonce': (window as any).threadnestApiSettings.nonce
       },
       credentials: 'include'
     };
