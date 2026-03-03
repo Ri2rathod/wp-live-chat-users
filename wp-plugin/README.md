@@ -4,8 +4,8 @@ Tags: chat, live chat, real-time, messaging, socket.io
 Requires at least: 5.6
 Tested up to: 6.9
 Stable tag: 0.1.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: MIT
+License URI: https://opensource.org/licenses/MIT
 
 Real-time user-to-user chat plugin for WordPress using a self-hosted WebSocket (Socket.IO) server.
 
